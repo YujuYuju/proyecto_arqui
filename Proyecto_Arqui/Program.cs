@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+using System.IO;
 
 namespace Proyecto_Arqui
 {
@@ -20,8 +20,8 @@ namespace Proyecto_Arqui
 
         //VARIABLES DE CADA NUCLEO (declarar en la creacion de cada hilo)
         /*int quantum;// lleva la cantidad de instrucciones que se ejecutan segun definio el usuario
-          int[,] cache_datos; //matriz de cache de datos
-          int[,] cache_instruc; //matriz de cache de instrucciones
+          int[,] cache_datos; //matriz de cache de datos, inicializar con ceros y con todo invalido
+          int[,] cache_instruc; //matriz de cache de instrucciones, inicializar con ceros y con todo invalido
           int[] registros;//registros propios del nucleo
           int PC;// se guarda la siguiente instruccion que se ejecutara
 
@@ -30,13 +30,22 @@ namespace Proyecto_Arqui
         public Program()
         {
             mem_principal_datos = new int[96];
+            for (int i=0; i<=95; i++) {
+                mem_principal_datos[i]= 1;
+            }
+
             mem_principal_instruc = new int[640];
+            for (int j = 0; j <= 640; j++)
+            {
+                mem_principal_instruc[j] = 1;
+            }
             ciclos_reloj = 0;
             cant_hilillos = 0;
             quantum_total = 0;
-            file_path = "..\\proyecto_arqui\\Hilillos";
+            file_path = "..\\proyecto_arqui\\Hilillos\\";
 
         }
+
         public void menu_usuario()
         {
             Console.WriteLine("\nCuantos hilillos?");
@@ -46,6 +55,13 @@ namespace Proyecto_Arqui
             Console.WriteLine("\nRecuerde que el .txt de cada hilillo debe estar en la carpeta 'Hilillos'");
             Console.WriteLine("\nDe cuanto será el quantum?");
             quantum_total = Int32.Parse(Console.ReadLine());
+        }
+        public void leer_hilillo_txt(int i)
+        {
+            foreach (string line in File.ReadLines(@file_path+i.ToString()+".txt", Encoding.UTF8))
+            {
+                // process the line
+            }
         }
 
         static void Main(string[] args)
