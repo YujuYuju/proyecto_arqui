@@ -12,6 +12,7 @@ namespace Proyecto_Arqui
         //VARIABLES GLOBALES
         int[] mem_principal_datos; //array de la memoria principal de datos 
         int[] mem_principal_instruc; //array de la memoria principal de instrucciones
+		int ultimo_mem_inst; //'puntero' al ultimo lleno en la memoria de instrucciones
         int[,] mat_contextos; //matriz de contextos
         double ciclos_reloj; //lleva la cantidad de ciclos de reloj
         int cant_hilillos; //cantidad de hilillos definida por el usuario
@@ -35,14 +36,15 @@ namespace Proyecto_Arqui
             }
 
             mem_principal_instruc = new int[640];
-            for (int j = 0; j <= 640; j++)
+            for (int j = 0; j <= 639; j++)
             {
                 mem_principal_instruc[j] = 1;
             }
+			ultimo_mem_inst = 0;
             ciclos_reloj = 0;
             cant_hilillos = 0;
             quantum_total = 0;
-            file_path = "..\\proyecto_arqui\\Hilillos\\";
+            file_path = "../../../Hilillos/";
 
         }
 
@@ -50,24 +52,52 @@ namespace Proyecto_Arqui
         {
             Console.WriteLine("\nCuantos hilillos?");
             cant_hilillos = Int32.Parse(Console.ReadLine());
-            mat_contextos = new int[cant_hilillos * 34, cant_hilillos * 34];
-
             Console.WriteLine("\nRecuerde que el .txt de cada hilillo debe estar en la carpeta 'Hilillos'");
             Console.WriteLine("\nDe cuanto será el quantum?");
             quantum_total = Int32.Parse(Console.ReadLine());
+
+			int size = cant_hilillos * 34;
+			mat_contextos = new int[size, size];
+			for (int i = 0; i <= size - 1; i++)
+			{
+				for (int j = 0; j <= size - 1; j++)
+				{
+					mat_contextos[i, j] = 0;
+				}
+			}
         }
-        public void leer_hilillo_txt(int i)
+
+        public int leer_hilillo_txt(int i)
         {
-            foreach (string line in File.ReadLines(@file_path+i.ToString()+".txt", Encoding.UTF8))
-            {
-                // process the line
-            }
-        }
+			char[] delimiterChars = { ' ', '\n'};
+			string text = System.IO.File.ReadAllText(@file_path + i.ToString() + ".txt");
+			string[] words = text.Split(delimiterChars);
+			System.Console.WriteLine("{0} words in text:", words.Length);
+			int ultimo_viejo = ultimo_mem_inst;
+
+			foreach (string s in words)
+			{
+				mem_principal_instruc[ultimo_mem_inst++]= Int32.Parse(s);
+			}
+
+			mem_principal_instruc[ultimo_mem_inst++] = ultimo_viejo;
+
+			for (int j = 0; j <= 639; j++)
+			{
+				Console.Write(mem_principal_instruc[j].ToString()+ ' ');
+
+			}
+			return ultimo_mem_inst;
+
+		}
 
         static void Main(string[] args)
         {
             Program p = new Program();
             p.menu_usuario();
+			int a= p.leer_hilillo_txt(1);
+			Console.WriteLine("\n"+a.ToString());
+
         }
     }
 }
