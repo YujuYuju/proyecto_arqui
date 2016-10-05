@@ -28,7 +28,7 @@ namespace Proyecto_Arqui
 
         */
 
-        public Program()
+        public Program() //constructor, se inicializan las variables
         {
             mem_principal_datos = new int[96];
             for (int i=0; i<=95; i++) {
@@ -48,7 +48,7 @@ namespace Proyecto_Arqui
 
         }
 
-        public void menu_usuario()
+        public void menu_usuario() //se manejan las preguntas iniciales al usuario
         {
             Console.WriteLine("\nCuantos hilillos?");
             cant_hilillos = Int32.Parse(Console.ReadLine());
@@ -67,37 +67,32 @@ namespace Proyecto_Arqui
 			}
         }
 
-        public int leer_hilillo_txt(int i)
+		private void leer_hilillo_txt(int i) //metodo auxiliar que sirve para leer un solo hilillo y meterlo en memoria
         {
 			char[] delimiterChars = { ' ', '\n'};
 			string text = System.IO.File.ReadAllText(@file_path + i.ToString() + ".txt");
 			string[] words = text.Split(delimiterChars);
-			System.Console.WriteLine("{0} words in text:", words.Length);
 			int ultimo_viejo = ultimo_mem_inst;
 
 			foreach (string s in words)
 			{
 				mem_principal_instruc[ultimo_mem_inst++]= Int32.Parse(s);
 			}
-
 			mem_principal_instruc[ultimo_mem_inst++] = ultimo_viejo;
 
-			for (int j = 0; j <= 639; j++)
-			{
-				Console.Write(mem_principal_instruc[j].ToString()+ ' ');
+		}
 
-			}
-			return ultimo_mem_inst;
-
+		public void leer_muchos_hilillos() { //permite cargar todos los hilillos desde el txt a memoria
+			for (int i = 1; i <= cant_hilillos; i++) {
+				leer_hilillo_txt(i);
+			}	
 		}
 
         static void Main(string[] args)
         {
             Program p = new Program();
             p.menu_usuario();
-			int a= p.leer_hilillo_txt(1);
-			Console.WriteLine("\n"+a.ToString());
-
+			p.leer_muchos_hilillos();
         }
     }
 }
