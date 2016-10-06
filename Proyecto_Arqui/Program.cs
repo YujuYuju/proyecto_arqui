@@ -20,9 +20,9 @@ namespace Proyecto_Arqui
         [ThreadStatic] static int PC;               //la siguiente instruccion a ejecutar
 
         static List<int> hilillos_tomados;
-        int ultimo_mem_inst;    //'puntero' a ultimo lleno en memoria de instrucciones
-        static int cant_hilillos;      //cantidad de hilillos definida por el usuario
-        string file_path;       //direccion del directorio donde estaran los hilillos
+        int ultimo_mem_inst;            //'puntero' a ultimo lleno en memoria de instrucciones
+        static int cant_hilillos;       //cantidad de hilillos definida por el usuario
+        string file_path;               //direccion del directorio donde estaran los hilillos
 
         /*Metodos direccionamiento de memoria--------------------------------*/
         private int dir_a_bloque(int direccion)
@@ -174,6 +174,13 @@ namespace Proyecto_Arqui
 
             //PROCESO DEL NUCLEO
             escogerHilillo();
+            //Leer la instrucción
+            //Hacer el gran CASE de instrucciones
+            //codificar lo que hace cada instrucción
+            //hacer partes para el for, de accesos de memoria
+            //poner barreras para el paso de instrucciones y manejar el reloj global
+            //Hacer cambio de contexto, cuando se termina una instrucción
+            //Tomar en cuenta el quantum local
         }
 
         /*-------------------------------------------------------------------*/
