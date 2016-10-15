@@ -139,6 +139,7 @@ namespace Proyecto_Arqui
                             hilillos_tomados.Add(i + 1);  //poner numero de hilillo, correspondiente con el PC
                             PC = mat_contextos[i, 32];
                             hilillo_escogido = true;
+                            Console.WriteLine(System.Threading.Thread.CurrentThread.Name + " tomo el hilillo " + (i + 1));
                         }
                     }
                 }
@@ -174,8 +175,10 @@ namespace Proyecto_Arqui
 
             //PROCESO DEL NUCLEO
             escogerHilillo();
+            Console.WriteLine(System.Threading.Thread.CurrentThread.Name + " tiene que ejecutar la instruccion en direccion " + PC);
+            //Buscar en cache, instruccion
             //Leer la instrucción
-            //Hacer el gran CASE de instrucciones
+            //Hacer el gran CASE de instrucciones, Aumentar en 4 el PC
             //codificar lo que hace cada instrucción
             //hacer partes para el for, de accesos de memoria
             //poner barreras para el paso de instrucciones y manejar el reloj global
