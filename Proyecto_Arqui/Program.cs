@@ -186,6 +186,75 @@ namespace Proyecto_Arqui
             //Tomar en cuenta el quantum local
         }
 
+        /*Instrucciones----------------------------------------------------------*/
+        public void reDireccionarInstruccion(int[] instruc) {
+
+            int operacion = instruc[0];
+            switch (operacion)
+            {
+                case 8:
+                    daddi_instruccion(instruc);
+                    break;
+                case 32:
+                    dadd_instruccion(instruc);
+                    break;
+                case 34:
+                    dsub_instruccion(instruc);
+                    break;
+                case 12:
+                    dmul_instruccion(instruc);
+                    break;
+                case 14:
+                    ddiv_instruccion(instruc);
+                    break;
+                case 4:
+                    beqz_instruccion(instruc);
+                    break;
+                case 5:
+                    bnez_instruccion(instruc);
+                    break;
+                case 3:
+                    jal_instruccion(instruc);
+                    break;
+                case 2:
+                    jr_instruccion(instruc);
+                    break;
+                case 63:
+                    fin_instruccion(instruc);
+                    break;
+            }
+        }
+
+        private void daddi_instruccion(int[] instru) {
+        }
+        private void dadd_instruccion(int[] instru)
+        {
+        }
+        private void dsub_instruccion(int[] instru)
+        {
+        }
+        private void dmul_instruccion(int[] instru)
+        {
+        }
+        private void ddiv_instruccion(int[] instru)
+        {
+        }
+        private void beqz_instruccion(int[] instru)
+        {
+        }
+        private void bnez_instruccion(int[] instru)
+        {
+        }
+        private void jal_instruccion(int[] instru)
+        {
+        }
+        private void jr_instruccion(int[] instru)
+        {
+        }
+        private void fin_instruccion(int[] instru)
+        {
+        }
+
         /*-------------------------------------------------------------------*/
         /*MAIN---------------------------------------------------------------*/
         static void Main(string[] args)
