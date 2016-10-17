@@ -226,18 +226,45 @@ namespace Proyecto_Arqui
         }
 
         private void daddi_instruccion(int[] instru) {
+            int param_1 = instru[1];
+            int param_2 = registros[instru[2]];
+            int param_3 = instru[3];
+
+            registros[param_1] = param_2 + param_3;
+            
         }
         private void dadd_instruccion(int[] instru)
         {
+            int param_1 = instru[1];
+            int param_2 = registros[instru[2]];
+            int param_3 = registros[instru[3]];
+
+            registros[param_1] = param_2 + param_3;
+
         }
         private void dsub_instruccion(int[] instru)
         {
+            int param_1 = instru[1];
+            int param_2 = registros[instru[2]];
+            int param_3 = registros[instru[3]];
+
+            registros[param_1] = param_2 - param_3;
         }
         private void dmul_instruccion(int[] instru)
         {
+            int param_1 = instru[1];
+            int param_2 = registros[instru[2]];
+            int param_3 = registros[instru[3]];
+
+            registros[param_1] = param_2 * param_3;
         }
         private void ddiv_instruccion(int[] instru)
         {
+            int param_1 = instru[1];
+            int param_2 = registros[instru[2]];
+            int param_3 = registros[instru[3]];
+
+            registros[param_1] = param_2 / param_3;
         }
         private void beqz_instruccion(int[] instru)
         {
