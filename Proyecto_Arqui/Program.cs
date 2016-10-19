@@ -12,18 +12,18 @@ namespace Proyecto_Arqui
         static int[,] mat_contextos;            //matriz de contextos
         static double ciclos_reloj;                    //cantidad de ciclos de reloj
         static int quantum_total;               //valor del usuario para quantum        
-        [ThreadStatic] static int quantum;          //cantidad de instrucciones ejecutadas       
-        [ThreadStatic] static int[] registros;      //registros propios del nucleo
-        [ThreadStatic] static int PC;               //la siguiente instruccion a ejecutar
-
-        static int[,] cache_datos1;   //matriz de cache de datos
-        static int[,] cache_datos2;   //matriz de cache de datos
-        static int[,] cache_datos3;   //matriz de cache de datos
-        static int[,] cache_instruc1; //matriz de cache de instrucciones
-        static int[,] cache_instruc2; //matriz de cache de instrucciones
-        static int[,] cache_instruc3; //matriz de cache de instrucciones
+        [ThreadStatic]
+        static int quantum;          //cantidad de instrucciones ejecutadas       
         [ThreadStatic]
         static int[] registros;      //registros propios del nucleo
+        [ThreadStatic]
+        static int[,] cache_instruc;
+        static int[,] cache_datos_1;   //matriz de cache de datos
+        static int[,] cache_datos_2;   //matriz de cache de datos
+        static int[,] cache_datos_3;   //matriz de cache de datos
+        static int[,] cache_instruc_1; //matriz de cache de instrucciones
+        static int[,] cache_instruc_2; //matriz de cache de instrucciones
+        static int[,] cache_instruc_3; //matriz de cache de instrucciones
         [ThreadStatic]
         static int PC;               //la siguiente instruccion a ejecutar
         static bool lento;
@@ -101,6 +101,22 @@ namespace Proyecto_Arqui
 
                 }
             }
+            cache_instruc = new int[5, 16];
+            for (int i = 0; i < 5; i++)
+            {
+                for (int j = 0; j < 16; j++)
+                {
+
+                    if (i == 4)
+                    {
+                        cache_instruc[i, j] = -1;
+                    }
+                    else
+                    {
+                        cache_instruc[i, j] = 0;
+                    }
+                }
+            }
             ultimo_mem_inst = 0;
             ciclos_reloj = 0;
             cant_hilillos = 0;
@@ -123,30 +139,34 @@ namespace Proyecto_Arqui
         /*Lectura txts------------------------------------------------------*/
         private void leer_hilillo_txt(int i) //Metodo auxiliar que sirve para leer un solo hilillo y meterlo en memoria
         {
-			char[] delimiterChars = { ' ', '\n'};
-			string text = System.IO.File.ReadAllText(@file_path + i.ToString() + ".txt");
-			string[] words = text.Split(delimiterChars);
-			int ultimo_viejo = ultimo_mem_inst;
+            char[] delimiterChars = { ' ', '\n' };
+            string text = System.IO.File.ReadAllText(@file_path + i.ToString() + ".txt");
+            string[] words = text.Split(delimiterChars);
+            int ultimo_viejo = ultimo_mem_inst;
 
-			foreach (string s in words)
-			{
-				mem_principal_instruc[ultimo_mem_inst++]= Int32.Parse(s);
-			}
-            mat_contextos[i-1, 32] = ultimo_viejo;   //el PC
+            foreach (string s in words)
+            {
+                mem_principal_instruc[ultimo_mem_inst++] = Int32.Parse(s);
+            }
+            mat_contextos[i - 1, 32] = ultimo_viejo;   //el PC
 
         }
-		public void leer_muchos_hilillos()//permite cargar todos los hilillos desde el txt a memoria
-        { 
+        public void leer_muchos_hilillos()//permite cargar todos los hilillos desde el txt a memoria
+        {
             mat_contextos = new int[cant_hilillos, 34];
-            for (int i = 1; i <= cant_hilillos; i++) {
-				leer_hilillo_txt(i);
-			}
-            mem_principal_instruc[ultimo_mem_inst]=1;
+            for (int i = 1; i <= cant_hilillos; i++)
+            {
+                leer_hilillo_txt(i);
+            }
+            mem_principal_instruc[ultimo_mem_inst] = 1;
 
 
-            for (int i = 0; i < cant_hilillos; i++){
-                for (int j = 0; j < 34; j++){
-                    if (j != 32) {
+            for (int i = 0; i < cant_hilillos; i++)
+            {
+                for (int j = 0; j < 34; j++)
+                {
+                    if (j != 32)
+                    {
                         mat_contextos[i, j] = 0;
                     }
                 }
@@ -159,12 +179,16 @@ namespace Proyecto_Arqui
         {
             bool lockWasTaken = false;
             var temp = mat_contextos;
-            try{
+            try
+            {
                 Monitor.Enter(temp, ref lockWasTaken);
                 bool hilillo_escogido = false;
-                for (int i=0; i< cant_hilillos && hilillo_escogido==false; i++) {
-                    if (mat_contextos[i, 33] != 1) {
-                        if (!hilillos_tomados.Contains(i + 1)) {
+                for (int i = 0; i < cant_hilillos && hilillo_escogido == false; i++)
+                {
+                    if (mat_contextos[i, 33] != 1)
+                    {
+                        if (!hilillos_tomados.Contains(i + 1))
+                        {
                             hilillos_tomados.Add(i + 1);  //poner numero de hilillo, correspondiente con el PC
                             PC = mat_contextos[i, 32];
                             hilillo_escogido = true;
@@ -186,16 +210,16 @@ namespace Proyecto_Arqui
             switch (System.Threading.Thread.CurrentThread.Name)
             {
                 case "Hilo1":
-                    inicializarCacheDatos(ref cache_datos1);
-                    inicializarCacheInstrucciones(ref cache_instruc1);
+                    inicializarCacheDatos(ref cache_datos_1);
+                    inicializarCacheInstrucciones(ref cache_instruc_1);
                     break;
                 case "Hilo2":
-                    inicializarCacheDatos(ref cache_datos2);
-                    inicializarCacheInstrucciones(ref cache_instruc2);
+                    inicializarCacheDatos(ref cache_datos_2);
+                    inicializarCacheInstrucciones(ref cache_instruc_2);
                     break;
                 case "Hilo3":
-                    inicializarCacheDatos(ref cache_datos3);
-                    inicializarCacheInstrucciones(ref cache_instruc3);
+                    inicializarCacheDatos(ref cache_datos_3);
+                    inicializarCacheInstrucciones(ref cache_instruc_3);
                     break;
             }
             registros = new int[34];
@@ -215,8 +239,10 @@ namespace Proyecto_Arqui
                 //identificar instrucción con su lógica. Se entra al CASE
                 barreraCicloReloj.SignalAndWait();
             }
-            else {
-                for (int i = 0; i < 28; i++) {
+            else
+            {
+                for (int i = 0; i < 28; i++)
+                {
                     barreraCicloReloj.SignalAndWait();
                 }
                 bool accesoInstrucciones = false;
@@ -232,13 +258,15 @@ namespace Proyecto_Arqui
 
                         //subir bloque a caché
                         int acum = 0;
-                        for (int j = 0; j < 4; j++) {
-                            for (int i = 0; i < 4; i++, acum++) {
+                        for (int j = 0; j < 4; j++)
+                        {
+                            for (int i = 0; i < 4; i++, acum++)
+                            {
                                 cache_instruc[i, j] = mem_principal_instruc[PC + acum];
                             }
                         }
-                        cache_instruc[4, bloque_a_cache(bloque)]=bloque;
-                        
+                        cache_instruc[4, bloque_a_cache(bloque)] = bloque;
+
                         //leer cuatro palabras usando direccion_a_vectorInstrucciones
                         //identificar instrucción con su lógica. Se entra al CASE
                     }
@@ -320,7 +348,8 @@ namespace Proyecto_Arqui
         static void Main(string[] args)
         {
             barreraCicloReloj = new Barrier(3,
-                b => { // This method is only called when all the paricipants arrived.
+                b =>
+                { // This method is only called when all the paricipants arrived.
                     //Console.WriteLine("Todos han llegado.");
                     ciclos_reloj++;
                     //Console.WriteLine("Ciclos de reloj hasta ahora: {0}", ciclos_reloj);
@@ -330,10 +359,13 @@ namespace Proyecto_Arqui
             p.leer_muchos_hilillos();
             modoDeEjejcucion();
             //IMPRESION DE MEMORIA INSTRUCCIONES
-            for (int i = 0; i < mem_principal_instruc.Length; i++) {
-                if (mem_principal_instruc[i] != 1) {
-                    Console.Write(mem_principal_instruc[i]+"  ");
-                    if (i!=0 && (i+1)%4==0){
+            for (int i = 0; i < mem_principal_instruc.Length; i++)
+            {
+                if (mem_principal_instruc[i] != 1)
+                {
+                    Console.Write(mem_principal_instruc[i] + "  ");
+                    if (i != 0 && (i + 1) % 4 == 0)
+                    {
                         Console.WriteLine("\n");
                     }
                 }
@@ -368,7 +400,7 @@ namespace Proyecto_Arqui
 
 
 
-    
+
 
 
 
