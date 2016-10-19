@@ -10,20 +10,17 @@ namespace Proyecto_Arqui
         static int[] mem_principal_datos;       //memoria principal de datos 
         static int[] mem_principal_instruc;     //memoria principal de instrucciones
         static int[,] mat_contextos;            //matriz de contextos
-        static double ciclos_reloj;                    //cantidad de ciclos de reloj
-        static int quantum_total;               //valor del usuario para quantum        
+        static double ciclos_reloj;             //cantidad de ciclos de reloj
+        static int quantum_total;               //valor del usuario para quantum       
+
+
         [ThreadStatic]
-        static int quantum;          //cantidad de instrucciones ejecutadas       
-        [ThreadStatic]
-        static int[] registros;      //registros propios del nucleo
-        [ThreadStatic]
-        static int[,] cache_instruc;
-        static int[,] cache_datos_1;   //matriz de cache de datos
-        static int[,] cache_datos_2;   //matriz de cache de datos
-        static int[,] cache_datos_3;   //matriz de cache de datos
-        static int[,] cache_instruc_1; //matriz de cache de instrucciones
-        static int[,] cache_instruc_2; //matriz de cache de instrucciones
-        static int[,] cache_instruc_3; //matriz de cache de instrucciones
+        static int quantum;                         //cantidad de instrucciones ejecutadas
+        static int[,] cache_datos_1;                //matriz de cache de datos 1
+        static int[,] cache_datos_2;                //matriz de cache de datos 2
+        static int[,] cache_datos_3;                //matriz de cache de datos 3
+        [ThreadStatic] static int[,] cache_instruc; //matriz de cache de instrucciones
+        [ThreadStatic] static int[] registros;      //registros propios del nucleo
         [ThreadStatic]
         static int PC;               //la siguiente instruccion a ejecutar
         static bool lento;
@@ -38,7 +35,7 @@ namespace Proyecto_Arqui
         /*Metodos direccionamiento de memoria--------------------------------*/
         private static int dir_a_bloque(int direccion)
         {
-            return direccion / 16;
+            return direccion / 4;
         }
         private static int dir_a_palabra(int direccion)
         {
@@ -101,22 +98,7 @@ namespace Proyecto_Arqui
 
                 }
             }
-            cache_instruc = new int[5, 16];
-            for (int i = 0; i < 5; i++)
-            {
-                for (int j = 0; j < 16; j++)
-                {
 
-                    if (i == 4)
-                    {
-                        cache_instruc[i, j] = -1;
-                    }
-                    else
-                    {
-                        cache_instruc[i, j] = 0;
-                    }
-                }
-            }
             ultimo_mem_inst = 0;
             ciclos_reloj = 0;
             cant_hilillos = 0;
@@ -207,26 +189,26 @@ namespace Proyecto_Arqui
         }
         private static void procesoDelNucelo()
         {
-            switch (System.Threading.Thread.CurrentThread.Name)
+            //INICIALIZACION
+            cache_instruc = new int[5, 16];
+            for (int i = 0; i < 5; i++)
             {
-                case "Hilo1":
-                    inicializarCacheDatos(ref cache_datos_1);
-                    inicializarCacheInstrucciones(ref cache_instruc_1);
-                    break;
-                case "Hilo2":
-                    inicializarCacheDatos(ref cache_datos_2);
-                    inicializarCacheInstrucciones(ref cache_instruc_2);
-                    break;
-                case "Hilo3":
-                    inicializarCacheDatos(ref cache_datos_3);
-                    inicializarCacheInstrucciones(ref cache_instruc_3);
-                    break;
+                for (int j = 0; j < 16; j++)
+                {
+                    if (i == 4)
+                    {
+                        cache_instruc[i, j] = -1;
+                    }
+                    else {
+                        cache_instruc[i, j] = 0;
+                    }
+                }
             }
             registros = new int[34];
             quantum = 0;
             PC = 0;
 
-            //PROCESO DEL NUCLEO
+            //PROCESO DEL NUCLEO---------------------------------------------------------------------------------------------------
             escogerHilillo();
             Console.WriteLine(System.Threading.Thread.CurrentThread.Name + " tiene que ejecutar la instruccion en direccion " + PC);
 
@@ -286,33 +268,6 @@ namespace Proyecto_Arqui
             //Hacer cambio de contexto, cuando se termina una instrucción
             //Tomar en cuenta el quantum local
         }
-
-        private static void inicializarCacheDatos(ref int[,] cache)
-        {
-            cache = new int[6, 4];
-            for (int i = 0; i < 6; i++)
-            {
-                for (int j = 0; j < 4; j++)
-                {
-                    cache[i, j] = 0;
-
-                }
-            }
-        }
-
-        private static void inicializarCacheInstrucciones(ref int[,] cache)
-        {
-            cache = new int[5, 16];
-            for (int i = 0; i < 5; i++)
-            {
-                for (int j = 0; j < 16; j++)
-                {
-                    cache[i, j] = 0;
-
-                }
-            }
-        }
-
 
 
         private static void modoDeEjejcucion()
