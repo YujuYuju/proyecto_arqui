@@ -32,8 +32,7 @@ namespace Proyecto_Arqui
         int ultimo_mem_inst;            //'puntero' a ultimo lleno en memoria de instrucciones
         static int cant_hilillos;       //cantidad de hilillos definida por el usuario
         string file_path;               //direccion del directorio donde estaran los hilillos
-        private readonly DireccionarMemoria _direccionarMemoria;
-        private readonly DireccionarEstructuraDeDatos _direccionarDatos;
+        
 
         /*Metodos direccionamiento de memoria--------------------------------*/
         private int dir_a_bloque(int direccion)
