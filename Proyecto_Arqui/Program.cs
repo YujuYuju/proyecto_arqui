@@ -21,8 +21,7 @@ namespace Proyecto_Arqui
         static int[,] cache_datos_3;                //matriz de cache de datos 3
         [ThreadStatic] static int[,] cache_instruc; //matriz de cache de instrucciones
         [ThreadStatic] static int[] registros;      //registros propios del nucleo
-        [ThreadStatic]
-        static int PC;               //la siguiente instruccion a ejecutar
+        [ThreadStatic] static int PC;               //la siguiente instruccion a ejecutar
         static bool lento;
 
         static List<int> hilillos_tomados;
@@ -35,7 +34,7 @@ namespace Proyecto_Arqui
         /*Metodos direccionamiento de memoria--------------------------------*/
         private static int dir_a_bloque(int direccion)
         {
-            return direccion / 4;
+            return direccion / 16;
         }
         private static int dir_a_palabra(int direccion)
         {
@@ -187,6 +186,76 @@ namespace Proyecto_Arqui
                 }
             }
         }
+
+        static void leerInstruccion() {
+            //Buscar en cache, instruccion
+            int bloque = dir_a_bloque(PC);
+            if (cache_instruc[4, bloque_a_cache(bloque)*4] == bloque)
+            {
+                ejecutarInstruccion();
+            }
+            else
+            {
+                for (int i = 0; i < 28; i++)
+                {
+                    barreraCicloReloj.SignalAndWait();
+                }
+
+                //LOCK de la memoria de instrucciones, principal
+                bool accesoInstrucciones = false;
+                while (accesoInstrucciones == false)
+                {
+                    bool lockWasTaken = false;
+                    var temp = mem_principal_instruc;
+                    try
+                    {
+                        Monitor.Enter(temp, ref lockWasTaken);
+                        accesoInstrucciones = true;
+                        int t = mem_principal_instruc[PC];
+
+                        //subir bloque a caché
+                        int acum = 0;
+                        for (int i = 0; i < 4; i++)
+                        {
+                            for (int j = 0; j < 4; j++, acum++)
+                            {
+                                cache_instruc[i, j+bloque_a_cache(bloque)*4] = mem_principal_instruc[PC + acum];
+                            }
+                        }
+                        int tem = bloque_a_cache(bloque);
+                        cache_instruc[4, bloque_a_cache(bloque)*4] = bloque;
+
+                        //Imprimir caché de instrucciones
+                        /*for (int i = 0; i < 5; i++)
+                        {
+                            for (int j = 0; j < 16; j++)
+                            {
+                                Console.Write (cache_instruc[i, j] + "  ");
+                            }
+                            Console.Write("\n\n");
+                        }*/
+
+                        ejecutarInstruccion();
+                    }
+                    finally
+                    {
+                        if (lockWasTaken)
+                        {
+                            Monitor.Exit(temp);
+                        }
+                    }
+                    barreraCicloReloj.SignalAndWait(); //tratando de hacer el LOCK, se cuentan ciclos de reloj
+                }
+            }
+        }
+
+        static void ejecutarInstruccion() {
+            //leer cuatro palabras usando direccion_a_vectorInstrucciones
+            //identificar instrucción con su lógica. Se entra al CASE
+
+            //hacer partes para el for, de accesos de memoria para datos
+            //poner barreras para el paso de instrucciones y manejar el reloj global
+        }
         private static void procesoDelNucelo()
         {
             //INICIALIZACION
@@ -211,60 +280,10 @@ namespace Proyecto_Arqui
             //PROCESO DEL NUCLEO---------------------------------------------------------------------------------------------------
             escogerHilillo();
             Console.WriteLine(System.Threading.Thread.CurrentThread.Name + " tiene que ejecutar la instruccion en direccion " + PC);
+            leerInstruccion();
+            
 
 
-            //Buscar en cache, instruccion
-            int bloque = dir_a_bloque(PC);
-            if (cache_instruc[4, bloque_a_cache(bloque)] == bloque)
-            {
-                //leer cuatro palabras usando direccion_a_vectorInstrucciones
-                //identificar instrucción con su lógica. Se entra al CASE
-                barreraCicloReloj.SignalAndWait();
-            }
-            else
-            {
-                for (int i = 0; i < 28; i++)
-                {
-                    barreraCicloReloj.SignalAndWait();
-                }
-                bool accesoInstrucciones = false;
-                while (accesoInstrucciones == false)
-                {
-                    bool lockWasTaken = false;
-                    var temp = mem_principal_instruc;
-                    try
-                    {
-                        Monitor.Enter(temp, ref lockWasTaken);
-                        accesoInstrucciones = true;
-                        int t = mem_principal_instruc[PC];
-
-                        //subir bloque a caché
-                        int acum = 0;
-                        for (int j = 0; j < 4; j++)
-                        {
-                            for (int i = 0; i < 4; i++, acum++)
-                            {
-                                cache_instruc[i, j] = mem_principal_instruc[PC + acum];
-                            }
-                        }
-                        cache_instruc[4, bloque_a_cache(bloque)] = bloque;
-
-                        //leer cuatro palabras usando direccion_a_vectorInstrucciones
-                        //identificar instrucción con su lógica. Se entra al CASE
-                    }
-                    finally
-                    {
-                        if (lockWasTaken)
-                        {
-                            Monitor.Exit(temp);
-                        }
-                    }
-                    barreraCicloReloj.SignalAndWait(); //tratando de hacer el LOCK, se cuentan ciclos de reloj
-                }
-            }
-
-            //hacer partes para el for, de accesos de memoria
-            //poner barreras para el paso de instrucciones y manejar el reloj global
             //Hacer cambio de contexto, cuando se termina una instrucción
             //Tomar en cuenta el quantum local
         }
@@ -466,6 +485,8 @@ namespace Proyecto_Arqui
  https://www.dotnetperls.com/interlocked
  https://msdn.microsoft.com/en-us/library/system.threading.interlocked.aspx
  http://stackoverflow.com/questions/6029804/how-does-lock-work-exactly
- http://dotnetpattern.com/threading-barrier
+ http://stackoverflow.com/questions/24975239/barrier-class-c-sharp
+ https://msdn.microsoft.com/en-us/library/dd537615(v=vs.110).aspx
+ http://geekswithblogs.net/jolson/archive/2009/02/09/an-intro-to-barrier.aspx
  http://www.codeproject.com/Articles/667298/Using-ThreadStaticAttribute
 */
