@@ -508,9 +508,13 @@ namespace Proyecto_Arqui
         }
         private void jr_instruccion(int[] instru)
         {
+            PC = registros[instru[1]];
         }
-        private void fin_instruccion(int[] instru)//poner en matriz de contextos un finalizado
+
+        private void fin_instruccion(int[] instru)
+        //poner en matriz de contextos un finalizado
         {
+            mat_contextos[hilillo_actual, 34] = 1;
         }
         private void lw_instruccion(int[] instru) {
             int X = instru[2];
