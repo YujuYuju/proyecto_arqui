@@ -171,6 +171,7 @@ namespace Proyecto_Arqui
                         if (!hilillos_tomados.Contains(i + 1))
                         {
                             hilillos_tomados.Add(i + 1);  //poner numero de hilillo, correspondiente con el PC
+                            hilillo_actual = i + 1;
                             PC = mat_contextos[i, 32];
                             hilillo_escogido = true;
                             Console.WriteLine(System.Threading.Thread.CurrentThread.Name + " tomo el hilillo " + (i + 1));
@@ -369,8 +370,11 @@ namespace Proyecto_Arqui
             nucleo2.Join();
             nucleo3.Join();
 
-
-
+            Console.Write(" Hilillos tomados: ");
+            for (int i = 0; i < hilillos_tomados.Count; i++) {
+                Console.Write(hilillos_tomados[i] + " ");
+            }
+            
             Console.ReadKey();
         }
 
@@ -414,6 +418,12 @@ namespace Proyecto_Arqui
                     break;
                 case 2:
                     jr_instruccion(instruc);
+                    break;
+                case 35:
+                    lw_instruccion(instruc);
+                    break;
+                case 43:
+                    sw_instruccion(instruc);
                     break;
                 case 63:
                     fin_instruccion(instruc);
@@ -498,13 +508,83 @@ namespace Proyecto_Arqui
         }
         private void jr_instruccion(int[] instru)
         {
-			PC = registros[instru[1]];			
         }
-
-        private void fin_instruccion(int[] instru)
-            //poner en matriz de contextos un finalizado
+        private void fin_instruccion(int[] instru)//poner en matriz de contextos un finalizado
         {
-			mat_contextos[hilillo_actual, 34] = 1;
+        }
+        private void lw_instruccion(int[] instru) {
+            int X = instru[2];
+            int Y = instru[1];
+            int n = instru[3];
+
+            //Buscar en cache, instruccion
+            int bloque = dir_a_bloque(PC);
+            if (cache_instruc[4, bloque_a_cache(bloque) * 4] == bloque)
+            {
+                ejecutarInstruccion();
+            }
+            else
+            {
+                for (int i = 0; i < 28; i++)
+                {
+                    barreraCicloReloj.SignalAndWait();
+                }
+
+                //LOCK de la memoria de instrucciones, principal
+                bool accesoInstrucciones = false;
+                while (accesoInstrucciones == false)
+                {
+                    bool lockWasTaken = false;
+                    var temp = mem_principal_instruc;
+                    try
+                    {
+                        Monitor.Enter(temp, ref lockWasTaken);
+                        accesoInstrucciones = true;
+                        int t = mem_principal_instruc[PC];
+
+                        //subir bloque a caché
+                        int acum = 0;
+                        for (int i = 0; i < 4; i++)
+                        {
+                            for (int j = 0; j < 4; j++, acum++)
+                            {
+                                cache_instruc[i, j + bloque_a_cache(bloque) * 4] = mem_principal_instruc[PC + acum];
+                            }
+                        }
+                        int tem = bloque_a_cache(bloque);
+                        cache_instruc[4, bloque_a_cache(bloque) * 4] = bloque;
+
+                        //Imprimir caché de instrucciones
+                        for (int i = 0; i < 5; i++)
+                        {
+                            for (int j = 0; j < 16; j++)
+                            {
+                                Console.Write(cache_instruc[i, j] + "  ");
+                            }
+                            Console.Write("\n\n");
+                        }
+
+                        ejecutarInstruccion();
+                    }
+                    finally
+                    {
+                        if (lockWasTaken)
+                        {
+                            Monitor.Exit(temp);
+                        }
+                    }
+                    barreraCicloReloj.SignalAndWait(); //tratando de hacer el LOCK, se cuentan ciclos de reloj
+                }
+            }
+            //Mem=lo cargado de Memoria[registros[Y]+n]
+            //registros[X] = Mem;
+        }
+        private void sw_instruccion(int[] instru) {//Write Through y No Write Allocate
+            int X = instru[2];
+            int Y = instru[1];
+            int n = instru[3];
+
+            //Escribir en Memoria[registro[y]+n] lo que esta en R[X]
         }
 
     }
