@@ -22,7 +22,7 @@ namespace Proyecto_Arqui
         [ThreadStatic] static int[,] cache_instruc; //matriz de cache de instrucciones
         [ThreadStatic] static int[] registros;      //registros propios del nucleo
         [ThreadStatic] static int PC;               //la siguiente instruccion a ejecutar
-        
+        [ThreadStatic] static int hilillo_actual;	//cual hilillo se esta ejecutando en un nucleo dado
 
         static List<int> hilillos_tomados;
         int ultimo_mem_inst;            //'puntero' a ultimo lleno en memoria de instrucciones
@@ -134,7 +134,7 @@ namespace Proyecto_Arqui
         }
         public void leer_muchos_hilillos()//permite cargar todos los hilillos desde el txt a memoria
         {
-            mat_contextos = new int[cant_hilillos, 34];
+            mat_contextos = new int[cant_hilillos, 35];
             for (int i = 1; i <= cant_hilillos; i++)
             {
                 leer_hilillo_txt(i);
@@ -477,16 +477,34 @@ namespace Proyecto_Arqui
 
         private void bnez_instruccion(int[] instru)
         {
+			int param_1 = instru[1];
+			int param_2 = instru[2];
+			int param_3 = instru[3];
+
+			if (param_1 != param_2)
+			{
+				PC += param_3 * 4;
+			}
         }
         private void jal_instruccion(int[] instru)
         {
+			int param_1 = instru[1];
+			int param_2 = instru[2];
+			int param_3 = instru[3];
+
+			PC += param_3;
+			registros[31] = PC;
+
         }
         private void jr_instruccion(int[] instru)
         {
+			PC = registros[instru[1]];			
         }
+
         private void fin_instruccion(int[] instru)
             //poner en matriz de contextos un finalizado
         {
+			mat_contextos[hilillo_actual, 34] = 1;
         }
 
     }
