@@ -433,52 +433,47 @@ namespace Proyecto_Arqui
 
         private static void daddi_instruccion(int[] instru)
         {
-            int param_1 = instru[2];
-            int param_2 = registros[instru[1]];
+            int param_1 = registros[instru[1]];
             int param_3 = instru[3];
 
-            registros[param_1] = param_2 + param_3;
+            registros[instru[2]] = param_1 + param_3;
             barreraCicloReloj.SignalAndWait();
         }
         private static void dadd_instruccion(int[] instru)
         {
-            int param_1 = instru[1];
+			int param_1 = registros[instru[1]];
             int param_2 = registros[instru[2]];
-            int param_3 = registros[instru[3]];
 
-            registros[param_1] = param_2 + param_3;
+            registros[instru[3]] = param_1 + param_2;
             barreraCicloReloj.SignalAndWait();
         }
         private static void dsub_instruccion(int[] instru)
         {
-            int param_1 = instru[1];
-            int param_2 = registros[instru[2]];
-            int param_3 = registros[instru[3]];
+			int param_1 = registros[instru[1]];
+			int param_2 = registros[instru[2]];
 
-            registros[param_1] = param_2 - param_3;
-            barreraCicloReloj.SignalAndWait();
+			registros[instru[3]] = param_1 - param_2;
+			barreraCicloReloj.SignalAndWait();
         }
         private static void dmul_instruccion(int[] instru)
         {
-            int param_1 = instru[1];
+            int param_1 = registros[instru[1]];
             int param_2 = registros[instru[2]];
-            int param_3 = registros[instru[3]];
 
-            registros[param_1] = param_2 * param_3;
+            registros[instru[3]] = param_1 * param_2;
             barreraCicloReloj.SignalAndWait();
         }
         private static void ddiv_instruccion(int[] instru)
         {
-            int param_1 = instru[1];
-            int param_2 = registros[instru[2]];
-            int param_3 = registros[instru[3]];
+			int param_1 = registros[instru[1]];
+			int param_2 = registros[instru[2]];
 
-            registros[param_1] = param_2 / param_3;
-            barreraCicloReloj.SignalAndWait();
+			registros[instru[3]] = param_1 / param_2;
+			barreraCicloReloj.SignalAndWait();
         }
 		private static void beqz_instruccion(int[] instru)
 		{
-			int param_1 = instru[1];
+			int param_1 = registros[instru[1]];
 			int param_2 = instru[2];
 			int param_3 = instru[3];
 
@@ -491,7 +486,7 @@ namespace Proyecto_Arqui
 
         private static void bnez_instruccion(int[] instru)
         {
-			int param_1 = instru[1];
+			int param_1 = registros[instru[1]];
 			int param_2 = instru[2];
 			int param_3 = instru[3];
 
@@ -503,12 +498,8 @@ namespace Proyecto_Arqui
         }
         private static void jal_instruccion(int[] instru)
         {
-			int param_1 = instru[1];
-			int param_2 = instru[2];
-			int param_3 = instru[3];
-
-			PC += param_3;
 			registros[31] = PC;
+			PC += instru[3];
             barreraCicloReloj.SignalAndWait();
         }
         private static void jr_instruccion(int[] instru)
