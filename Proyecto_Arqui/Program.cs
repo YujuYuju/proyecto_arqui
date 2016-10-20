@@ -516,16 +516,45 @@ namespace Proyecto_Arqui
         {
             mat_contextos[hilillo_actual, 34] = 1;
         }
+
+
+
+
         private void lw_instruccion(int[] instru) {
             int X = instru[2];
             int Y = instru[1];
             int n = instru[3];
 
             //Buscar en cache, instruccion
-            int bloque = dir_a_bloque(PC);
-            if (cache_instruc[4, bloque_a_cache(bloque) * 4] == bloque)
+            int direccionDelDato = registros[Y] + n;
+
+            string hiloActual = System.Threading.Thread.CurrentThread.Name;
+            switch (hiloActual)
             {
-                ejecutarInstruccion();
+                case "Nucleo1":
+                    lw_nucleo(direccionDelDato, X, ref cache_datos_1);
+                    break;
+                case "Nucleo2":
+                    lw_nucleo(direccionDelDato, X, ref cache_datos_2);
+                    break;
+                case "Nucleo3":
+                    lw_nucleo(direccionDelDato, X, ref cache_datos_3);
+                    break;
+            }
+
+            //Mem=lo cargado de Memoria[registros[Y]+n]
+            //registros[X] = Mem;
+        }
+        private void lw_nucleo(int direccionDelDato, int X, ref int[,] cache)
+        {
+            int bloqueDelDato = dir_a_bloque(direccionDelDato);
+            int palabraDelDato = dir_a_palabra(direccionDelDato);
+
+
+            if (cache_instruc[4, bloque_a_cache(bloqueDelDato) * 4] == bloqueDelDato)
+            {
+                int contenidoDeMem = cache[palabraDelDato, bloqueDelDato];
+                registros[X] = contenidoDeMem;
             }
             else
             {
@@ -535,60 +564,87 @@ namespace Proyecto_Arqui
                 }
 
                 //LOCK de la memoria de instrucciones, principal
-                bool accesoInstrucciones = false;
-                while (accesoInstrucciones == false)
+                bool accesoDeCacheLocal = false;
+                while (accesoDeCacheLocal == false)
                 {
-                    bool lockWasTaken = false;
-                    var temp = mem_principal_instruc;
+                    //cacheLocal----------------------------------------------------------
+                    bool lockWasTaken1 = false;
+                    var temp1 = cache;
                     try
                     {
-                        Monitor.Enter(temp, ref lockWasTaken);
-                        accesoInstrucciones = true;
-                        int t = mem_principal_instruc[PC];
+                        Monitor.Enter(temp1, ref lockWasTaken1);
+                        accesoDeCacheLocal = true;
 
-                        //subir bloque a caché
-                        int acum = 0;
-                        for (int i = 0; i < 4; i++)
+                        //memoriaDatos---------------------------------------------------
+                        bool lockWasTakenMem = false;
+                        var tempMem = mem_principal_datos;
+                        try
                         {
-                            for (int j = 0; j < 4; j++, acum++)
+                            Monitor.Enter(tempMem, ref lockWasTakenMem);
+                            //subir bloque a caché
+                            for (int i = 0; i < 4; i++)
                             {
-                                cache_instruc[i, j + bloque_a_cache(bloque) * 4] = mem_principal_instruc[PC + acum];
+                                cache[i, bloque_a_cache(bloqueDelDato) * 4] = mem_principal_instruc[PC];
+                            }
+                            cache_instruc[4, bloque_a_cache(bloqueDelDato) * 4] = bloqueDelDato;
+
+                            //Imprimir caché de datos
+                            for (int i = 0; i < 5; i++)
+                            {
+                                for (int j = 0; j < 16; j++)
+                                {
+                                    Console.Write(cache[i, j] + "  ");
+                                }
+                                Console.Write("\n\n");
+                            }
+
+                            int contenidoDeMem = cache[palabraDelDato, bloqueDelDato];
+                            registros[X] = contenidoDeMem;
+                        }
+                        finally
+                        {
+                            if (lockWasTakenMem)
+                            {
+                                Monitor.Exit(tempMem);
                             }
                         }
-                        int tem = bloque_a_cache(bloque);
-                        cache_instruc[4, bloque_a_cache(bloque) * 4] = bloque;
-
-                        //Imprimir caché de instrucciones
-                        for (int i = 0; i < 5; i++)
-                        {
-                            for (int j = 0; j < 16; j++)
-                            {
-                                Console.Write(cache_instruc[i, j] + "  ");
-                            }
-                            Console.Write("\n\n");
-                        }
-
-                        ejecutarInstruccion();
                     }
                     finally
                     {
-                        if (lockWasTaken)
+                        if (lockWasTaken1)
                         {
-                            Monitor.Exit(temp);
+                            Monitor.Exit(temp1);
                         }
                     }
                     barreraCicloReloj.SignalAndWait(); //tratando de hacer el LOCK, se cuentan ciclos de reloj
                 }
             }
-            //Mem=lo cargado de Memoria[registros[Y]+n]
-            //registros[X] = Mem;
         }
         private void sw_instruccion(int[] instru) {//Write Through y No Write Allocate
             int X = instru[2];
             int Y = instru[1];
             int n = instru[3];
 
+            //Buscar en cache, instruccion
+            int direccionDelDato = registros[Y] + n;
+
+            string hiloActual = System.Threading.Thread.CurrentThread.Name;
+            switch (hiloActual)
+            {
+                case "Nucleo1":
+                    sw_nucleo(direccionDelDato, X, ref cache_datos_1);
+                    break;
+                case "Nucleo2":
+                    sw_nucleo(direccionDelDato, X, ref cache_datos_2);
+                    break;
+                case "Nucleo3":
+                    sw_nucleo(direccionDelDato, X, ref cache_datos_3);
+                    break;
+            }
             //Escribir en Memoria[registro[y]+n] lo que esta en R[X]
+        }
+        private void sw_nucleo(int direccionDelDato, int X, ref int[,] cache) {
+
         }
 
     }
