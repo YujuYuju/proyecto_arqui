@@ -463,9 +463,18 @@ namespace Proyecto_Arqui
 
             registros[param_1] = param_2 / param_3;
         }
-        private void beqz_instruccion(int[] instru)
-        {
-        }
+		private void beqz_instruccion(int[] instru)
+		{
+			int param_1 = instru[1];
+			int param_2 = instru[2];
+			int param_3 = instru[3];
+
+			if (param_1 == param_2)
+			{
+				PC += param_3 * 4;
+			}
+		}
+
         private void bnez_instruccion(int[] instru)
         {
         }
