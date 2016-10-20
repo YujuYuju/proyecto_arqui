@@ -6,23 +6,23 @@ namespace Proyecto_Arqui
 {
     class Program
     {
-        //VARIABLES GLOBALES
+        //VARIABLES GLOBALES-compartidas entre todos los nucleos
         static int[] mem_principal_datos;       //memoria principal de datos 
         static int[] mem_principal_instruc;     //memoria principal de instrucciones
         static int[,] mat_contextos;            //matriz de contextos
         static double ciclos_reloj;             //cantidad de ciclos de reloj
-        static int quantum_total;               //valor del usuario para quantum       
+        static int quantum_total;               //valor del usuario para quantum
+        static int[,] cache_datos_1;            //matriz de cache de datos 1
+        static int[,] cache_datos_2;            //matriz de cache de datos 2
+        static int[,] cache_datos_3;            //matriz de cache de datos 3 
+        static bool lento;
 
-
-        [ThreadStatic]
-        static int quantum;                         //cantidad de instrucciones ejecutadas
-        static int[,] cache_datos_1;                //matriz de cache de datos 1
-        static int[,] cache_datos_2;                //matriz de cache de datos 2
-        static int[,] cache_datos_3;                //matriz de cache de datos 3
+        //VARIABLE LOCALES-locales a cada thread
+        [ThreadStatic] static int quantum;          //cantidad de instrucciones ejecutadas
         [ThreadStatic] static int[,] cache_instruc; //matriz de cache de instrucciones
         [ThreadStatic] static int[] registros;      //registros propios del nucleo
         [ThreadStatic] static int PC;               //la siguiente instruccion a ejecutar
-        static bool lento;
+        
 
         static List<int> hilillos_tomados;
         int ultimo_mem_inst;            //'puntero' a ultimo lleno en memoria de instrucciones
@@ -32,11 +32,11 @@ namespace Proyecto_Arqui
         static Barrier barreraCicloReloj;
 
         /*Metodos direccionamiento de memoria--------------------------------*/
-        private static int dir_a_bloque(int direccion)
+        private static int dir_a_bloque(int direccion)//regresa el numero de bloque
         {
             return direccion / 16;
         }
-        private static int dir_a_palabra(int direccion)
+        private static int dir_a_palabra(int direccion)//regresa el numero de palabra
         {
             return (direccion % 16) / 4;
         }
@@ -226,14 +226,14 @@ namespace Proyecto_Arqui
                         cache_instruc[4, bloque_a_cache(bloque)*4] = bloque;
 
                         //Imprimir caché de instrucciones
-                        /*for (int i = 0; i < 5; i++)
+                        for (int i = 0; i < 5; i++)
                         {
                             for (int j = 0; j < 16; j++)
                             {
                                 Console.Write (cache_instruc[i, j] + "  ");
                             }
                             Console.Write("\n\n");
-                        }*/
+                        }
 
                         ejecutarInstruccion();
                     }
@@ -255,6 +255,8 @@ namespace Proyecto_Arqui
 
             //hacer partes para el for, de accesos de memoria para datos
             //poner barreras para el paso de instrucciones y manejar el reloj global
+
+            //PC+=4
         }
         private static void procesoDelNucelo()
         {
@@ -352,15 +354,15 @@ namespace Proyecto_Arqui
 
             //crear nucleos
             var nucleo1 = new Thread(new ThreadStart(procesoDelNucelo));
-            nucleo1.Name = String.Format("Hilo{0}", 1);
+            nucleo1.Name = String.Format("Nucleo{0}", 1);
             nucleo1.Start();
 
             var nucleo2 = new Thread(new ThreadStart(procesoDelNucelo));
-            nucleo2.Name = String.Format("Hilo{0}", 2);
+            nucleo2.Name = String.Format("Nucleo{0}", 2);
             nucleo2.Start();
 
             var nucleo3 = new Thread(new ThreadStart(procesoDelNucelo));
-            nucleo3.Name = String.Format("Hilo{0}", 3);
+            nucleo3.Name = String.Format("Nucleo{0}", 3);
             nucleo3.Start();
 
             nucleo1.Join();
@@ -474,6 +476,7 @@ namespace Proyecto_Arqui
         {
         }
         private void fin_instruccion(int[] instru)
+            //poner en matriz de contextos un finalizado
         {
         }
 
