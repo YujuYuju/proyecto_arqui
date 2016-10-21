@@ -114,13 +114,13 @@ namespace Proyecto_Arqui
             {
                 mem_principal_instruc[ultimo_mem_inst++] = Int32.Parse(s);
             }
-            mat_contextos[i - 1, 32] = ultimo_viejo;   //el PC
+            mat_contextos[i-1, 32] = ultimo_viejo;   //el PC
 
         }
         public void leer_muchos_hilillos()//permite cargar todos los hilillos desde el txt a memoria
         {
             mat_contextos = new int[cant_hilillos, 35];
-            for (int i = 0; i < cant_hilillos; i++)
+            for (int i = 1; i <= cant_hilillos; i++)
             {
                 leer_hilillo_txt(i);
             }
@@ -210,8 +210,13 @@ namespace Proyecto_Arqui
                             int tem = bloque_a_cache(bloque);
                             cache_instruc[4, bloque_a_cache(bloque) * 4] = bloque;
 
-                            //Imprimir caché de instrucciones
-                            for (int i = 0; i < 5; i++)
+                        }
+                        finally
+                        {
+                            Monitor.Exit(mem_principal_instruc);
+                        }
+                        //Imprimir caché de instrucciones
+                        for (int i = 0; i < 5; i++)
                             {
                                 for (int j = 0; j < 16; j++)
                                 {
@@ -221,11 +226,6 @@ namespace Proyecto_Arqui
                             }
 
                             ejecutarInstruccion();
-                        }
-                        finally
-                        {
-                            Monitor.Exit(mem_principal_instruc);
-                        }
                     }
                     else
                     {
