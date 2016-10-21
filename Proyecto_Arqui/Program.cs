@@ -120,7 +120,7 @@ namespace Proyecto_Arqui
         public void leer_muchos_hilillos()//permite cargar todos los hilillos desde el txt a memoria
         {
             mat_contextos = new int[cant_hilillos, 35];
-            for (int i = 1; i <= cant_hilillos; i++)
+            for (int i = 0; i < cant_hilillos; i++)
             {
                 leer_hilillo_txt(i);
             }
@@ -143,32 +143,32 @@ namespace Proyecto_Arqui
         /*Hilos----------------------------------------------------------*/
         static void escogerHilillo()
         {
-            bool lockWasTaken = false;
-            var temp = mat_contextos;
-            try
+            bool hilillo_escogido = false;
+            while (hilillo_escogido == false)
             {
-                Monitor.Enter(temp, ref lockWasTaken);
-                bool hilillo_escogido = false;
-                for (int i = 0; i < cant_hilillos && hilillo_escogido == false; i++)
+                if (Monitor.TryEnter(mat_contextos))
                 {
-                    if (mat_contextos[i, 33] != 1)
+                    try
                     {
-                        if (!hilillos_tomados.Contains(i + 1))
+                        for (int i = 0; i < cant_hilillos && hilillo_escogido == false; i++)
                         {
-                            hilillos_tomados.Add(i + 1);  //poner numero de hilillo, correspondiente con el PC
-                            hilillo_actual = i + 1;
-                            PC = mat_contextos[i, 32];
-                            hilillo_escogido = true;
-                            Console.WriteLine(System.Threading.Thread.CurrentThread.Name + " tomo el hilillo " + (i + 1));
+                            if (mat_contextos[i, 33] != 1)
+                            {
+                                if (!hilillos_tomados.Contains(i + 1))
+                                {
+                                    hilillos_tomados.Add(i + 1);  //poner numero de hilillo, correspondiente con el PC
+                                    hilillo_actual = i + 1;
+                                    PC = mat_contextos[i, 32];
+                                    hilillo_escogido = true;
+                                    Console.WriteLine(System.Threading.Thread.CurrentThread.Name + " tomo el hilillo " + (i + 1));
+                                }
+                            }
                         }
                     }
-                }
-            }
-            finally
-            {
-                if (lockWasTaken)
-                {
-                    Monitor.Exit(temp);
+                    finally
+                    {
+                        Monitor.Exit(mat_contextos);
+                    }
                 }
             }
         }
@@ -194,34 +194,44 @@ namespace Proyecto_Arqui
                 {
                     if (Monitor.TryEnter(mem_principal_instruc))
                     {
-                        accesoInstrucciones = true;
-                        //subir bloque a caché
-                        int acum = 0;
-                        for (int i = 0; i < 4; i++)
+                        try
                         {
-                            for (int j = 0; j < 4; j++, acum++)
+                            accesoInstrucciones = true;
+                            //subir bloque a caché
+                            int acum = 0;
+                            for (int i = 0; i < 4; i++)
                             {
-                                cache_instruc[i, j + bloque_a_cache(bloque) * 4] = mem_principal_instruc[PC + acum];
+                                for (int j = 0; j < 4; j++, acum++)
+                                {
+                                    cache_instruc[i, j + bloque_a_cache(bloque) * 4] = mem_principal_instruc[PC + acum];
+                                }
                             }
+
+                            int tem = bloque_a_cache(bloque);
+                            cache_instruc[4, bloque_a_cache(bloque) * 4] = bloque;
+
+                            //Imprimir caché de instrucciones
+                            for (int i = 0; i < 5; i++)
+                            {
+                                for (int j = 0; j < 16; j++)
+                                {
+                                    Console.Write(cache_instruc[i, j] + "  ");
+                                }
+                                Console.Write("\n\n");
+                            }
+
+                            ejecutarInstruccion();
                         }
-
-                        int tem = bloque_a_cache(bloque);
-                        cache_instruc[4, bloque_a_cache(bloque) * 4] = bloque;
-
-                        //Imprimir caché de instrucciones
-                        for (int i = 0; i < 5; i++)
+                        finally
                         {
-                            for (int j = 0; j < 16; j++)
-                            {
-                                Console.Write(cache_instruc[i, j] + "  ");
-                            }
-                            Console.Write("\n\n");
+                            Monitor.Exit(mem_principal_instruc);
                         }
-
-                        ejecutarInstruccion();
                     }
                     else
+                    {
                         barreraCicloReloj.SignalAndWait(); //tratando de hacer el LOCK, se cuentan ciclos de reloj
+                    }
+                        
                 }
             }
         }
@@ -539,43 +549,50 @@ namespace Proyecto_Arqui
                     barreraCicloReloj.SignalAndWait();
                 }
 
-                //LOCK de la memoria de instrucciones, principal
+                //LOCKs
+                bool pasoLockDeAdentro=false;
+
                 bool accesoDeCacheLocal = false;
                 while (accesoDeCacheLocal == false)
                 {
+                    pasoLockDeAdentro = false;
                     //cacheLocal----------------------------------------------------------
-                    bool lockWasTaken1 = false;
-                    var temp1 = cache;
-                    try
+                    if (Monitor.TryEnter(cache))
                     {
-                        Monitor.Enter(temp1, ref lockWasTaken1);
-
-                        //memoriaDatos---------------------------------------------------
-                        bool lockWasTakenMem = false;
-                        var tempMem = mem_principal_datos;
                         try
                         {
-                            Monitor.Enter(tempMem, ref lockWasTakenMem);
-                            //Logica Instruccion-----------------------------------------
-                            logica_lw(ref cache, bloqueDelDato, palabraDelDato, X);
-                            accesoDeCacheLocal = true;
+                            //Memoria de Datos---------------------------------------------------
+                            if (Monitor.TryEnter(mem_principal_datos))
+                            {
+                                try
+                                {
+                                    //Logica Instruccion-----------------------------------------
+                                    logica_lw(ref cache, bloqueDelDato, palabraDelDato, X);
+                                    accesoDeCacheLocal = true;
+                                    barreraCicloReloj.SignalAndWait();
+                                    pasoLockDeAdentro = true;
+                                }
+                                finally
+                                {
+                                    Monitor.Exit(mem_principal_datos);
+                                }
+                            }
+                            else
+                            {
+                                barreraCicloReloj.SignalAndWait(); //tratando de hacer el LOCK, se cuentan ciclos de reloj
+                            }
                         }
                         finally
                         {
-                            if (lockWasTakenMem)
-                            {
-                                Monitor.Exit(tempMem);
-                            }
+                            Monitor.Exit(cache);
                         }
                     }
-                    finally
+                    else
                     {
-                        if (lockWasTaken1)
-                        {
-                            Monitor.Exit(temp1);
-                        }
+                        if (!pasoLockDeAdentro)
+                            barreraCicloReloj.SignalAndWait(); //tratando de hacer el LOCK, se cuentan ciclos de reloj
                     }
-                    barreraCicloReloj.SignalAndWait(); //tratando de hacer el LOCK, se cuentan ciclos de reloj
+                    
                 }
             }
         }
@@ -603,7 +620,7 @@ namespace Proyecto_Arqui
         }
 
         
-        private void sw_instruccion(int[] instru) {//Write Through y No Write Allocate
+        private static void sw_instruccion(int[] instru) {//Write Through y No Write Allocate
             int X = instru[2];
             int Y = instru[1];
             int n = instru[3];
@@ -625,7 +642,7 @@ namespace Proyecto_Arqui
                     break;
             }
         }
-        private void sw_nucleo(int direccionDondeSeGuarda, int X, ref int[,] cache, ref int[,] primeraNoLocal, ref int[,] segundaNoLocal) {
+        private static void sw_nucleo(int direccionDondeSeGuarda, int X, ref int[,] cache, ref int[,] primeraNoLocal, ref int[,] segundaNoLocal) {
             int bloqueDelDato = dir_a_bloque(direccionDondeSeGuarda);
             
             if (cache_instruc[4, bloque_a_cache(bloqueDelDato) * 4] == bloqueDelDato)
@@ -649,77 +666,85 @@ namespace Proyecto_Arqui
             }
         }
         private static void todosLosLocks(bool fue_fallo, int direccionDondeSeGuarda, int X, ref int[,] cache, ref int[,] primeraNoLocal, ref int[,] segundaNoLocal) {
+            bool algunoNOseObtuvo = false;
+
             bool accesoTodas = false;
             while (accesoTodas == false)
             {
-                bool lockLocal = false;
-                var temp1 = cache;
-                try//cacheLocal
+                algunoNOseObtuvo = false;
+                //cacheLocal
+                if (Monitor.TryEnter(cache))
                 {
-                    Monitor.Enter(temp1, ref lockLocal);
-
-                    bool lockMem = false;
-                    var tempMem = mem_principal_datos;
-                    try//memoriaDatos
+                    try
                     {
-                        Monitor.Enter(tempMem, ref lockMem);
-                        //CACHES NO LOCALES
-
-                        bool lockCache2 = false;
-                        var tempCache2 = primeraNoLocal;
-                        try//cache2--------------------------------------------------------------------------
+                        //memoriaDatos
+                        if (Monitor.TryEnter(mem_principal_datos))
                         {
-                            Monitor.Enter(tempCache2, ref lockCache2);
-
-                            bool lockCache3 = false;
-                            var tempCache3 = segundaNoLocal;
-                            try//cache3------------------------------------------------------------
+                            try
                             {
-                                Monitor.Enter(tempCache3, ref lockCache3);
-                                //LOGICA
-                                if (fue_fallo)
+                                //cache2--------------------------------------------------------------------------
+                                if (Monitor.TryEnter(primeraNoLocal))
                                 {
-                                    //se escribe solo en memoria
-                                    mem_principal_datos[direccionDondeSeGuarda]=registros[X];
+                                    try
+                                    {
+                                        //cache3------------------------------------------------------------
+                                        if (Monitor.TryEnter(segundaNoLocal))
+                                        {
+                                            try
+                                            {
+                                                //LOGICA
+                                                if (fue_fallo)
+                                                {
+                                                    //se escribe solo en memoria
+                                                    mem_principal_datos[direccionDondeSeGuarda] = registros[X];
+                                                }
+                                                else
+                                                {
+                                                    //se escribe en cache y en memoria
+                                                    cache[dir_a_palabra(direccionDondeSeGuarda), bloque_a_cache(dir_a_bloque(direccionDondeSeGuarda))] = registros[X];
+                                                    mem_principal_datos[direccionDondeSeGuarda] = registros[X];
+                                                }
+                                                accesoTodas = true;
+                                            }
+                                            finally
+                                            {
+                                                Monitor.Exit(segundaNoLocal);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            algunoNOseObtuvo = true;
+                                        }//cache3------------------------------------------------------------
+                                    }
+                                    finally
+                                    {
+                                        Monitor.Exit(primeraNoLocal);
+                                    }
                                 }
-                                else {
-                                    //se escribe en cache y en memoria
-                                    cache[dir_a_palabra(direccionDondeSeGuarda), bloque_a_cache(dir_a_bloque(direccionDondeSeGuarda))] = registros[X];
-                                    mem_principal_datos[direccionDondeSeGuarda] = registros[X];
-                                }
-                                accesoTodas = true;
+                                else
+                                {
+                                    algunoNOseObtuvo = true;
+                                }//cache2--------------------------------------------------------------------------
                             }
                             finally
                             {
-                                if (lockCache3)
-                                {
-                                    Monitor.Exit(tempCache3);
-                                }
-                            }//cache3--------------------------------------------------------------
-                        }
-                        finally//cache2
-                        {
-                            if (lockCache2)
-                            {
-                                Monitor.Exit(tempCache2);
+                                Monitor.Exit(mem_principal_datos);
                             }
-                        }//cache2-----------------------------------------------------------------------------
-
-                    }
-                    finally//memoriaDatos
-                    {
-                        if (lockMem)
+                        }//memoriaDatos
+                        else
                         {
-                            Monitor.Exit(tempMem);
+                            algunoNOseObtuvo = true;
                         }
                     }
-                }
-                finally//cacheLocal
-                {
-                    if (lockLocal)
+                    finally
                     {
-                        Monitor.Exit(temp1);
+                        Monitor.Exit(cache);
                     }
+                }//cacheLocal
+                else
+                {
+                    if (!algunoNOseObtuvo)
+                        barreraCicloReloj.SignalAndWait(); //tratando de hacer el LOCK, se cuentan ciclos de reloj
                 }
                 barreraCicloReloj.SignalAndWait(); //tratando de hacer el LOCK, se cuentan ciclos de reloj
             }
