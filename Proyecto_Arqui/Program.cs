@@ -51,58 +51,21 @@ namespace Proyecto_Arqui
             return bloque % 4;
         }
 
-        //Direccionamiento de Estructuras de Datos
-        private static int direccion_a_vectorDatos(int direccion)
-        {
-            return direccion / 4;
-        }
-        private static int vectorDatos_a_direccion(int indiceVector)
-        {
-            return indiceVector * 4;
-        }
-
         /*----------------------------------------------------------------------------------------------*/
         /*Inicio del programa-----------------------------------------------*/
         public Program() //constructor, se inicializan las variables
         {
             mem_principal_datos = new int[96];
-            for (int i = 0; i <= 95; i++)
-            {
-                mem_principal_datos[i] = 1;
-            }
-
+            inicializarMemorias(ref mem_principal_datos);
             mem_principal_instruc = new int[640];
-            for (int j = 0; j <= 639; j++)
-            {
-                mem_principal_instruc[j] = 1;
-            }
+            inicializarMemorias(ref mem_principal_instruc);
+
             cache_datos_1 = new int[6, 4];
-            for (int i = 0; i < 6; i++)
-            {
-                for (int j = 0; j < 4; j++)
-                {
-                    cache_datos_1[i, j] = 0;
-
-                }
-            }
             cache_datos_2 = new int[6, 4];
-            for (int i = 0; i < 6; i++)
-            {
-                for (int j = 0; j < 4; j++)
-                {
-                    cache_datos_2[i, j] = 0;
-
-                }
-            }
             cache_datos_3 = new int[6, 4];
-            for (int i = 0; i < 6; i++)
-            {
-                for (int j = 0; j < 4; j++)
-                {
-                    cache_datos_3[i, j] = 0;
-
-                }
-            }
+            inicializarCache(ref cache_datos_1);
+            inicializarCache(ref cache_datos_2);
+            inicializarCache(ref cache_datos_3);
 
             ultimo_mem_inst = 0;
             ciclos_reloj = 0;
@@ -110,6 +73,22 @@ namespace Proyecto_Arqui
             quantum_total = 0;
             file_path = "../../../Hilillos/";
             hilillos_tomados = new List<int>();
+        }
+        private static void inicializarCache(ref int[,] cache)
+        {
+            for (int i = 0; i < 6; i++)
+            {
+                for (int j = 0; j < 4; j++)
+                {
+                    cache[i, j] = 0;
+
+                }
+            }
+        }
+        private static void inicializarMemorias(ref int[] matriz) {
+            for (int i = 0; i < matriz.Length; i++) {
+                matriz[i] = 1;
+            }
         }
 
         public void menu_usuario() //se manejan las preguntas iniciales al usuario
@@ -570,7 +549,6 @@ namespace Proyecto_Arqui
                     try
                     {
                         Monitor.Enter(temp1, ref lockWasTaken1);
-                        accesoDeCacheLocal = true;
 
                         //memoriaDatos---------------------------------------------------
                         bool lockWasTakenMem = false;
@@ -578,25 +556,9 @@ namespace Proyecto_Arqui
                         try
                         {
                             Monitor.Enter(tempMem, ref lockWasTakenMem);
-                            //subir bloque a caché
-                            for (int i = 0; i < 4; i++)
-                            {
-                                cache[i, bloque_a_cache(bloqueDelDato) * 4] = mem_principal_instruc[PC];
-                            }
-                            cache_instruc[4, bloque_a_cache(bloqueDelDato) * 4] = bloqueDelDato;
-
-                            //Imprimir caché de datos
-                            for (int i = 0; i < 5; i++)
-                            {
-                                for (int j = 0; j < 16; j++)
-                                {
-                                    Console.Write(cache[i, j] + "  ");
-                                }
-                                Console.Write("\n\n");
-                            }
-
-                            int contenidoDeMem = cache[palabraDelDato, bloqueDelDato];
-                            registros[X] = contenidoDeMem;
+                            //Logica Instruccion-----------------------------------------
+                            logica_lw(ref cache, bloqueDelDato, palabraDelDato, X);
+                            accesoDeCacheLocal = true;
                         }
                         finally
                         {
@@ -617,33 +579,150 @@ namespace Proyecto_Arqui
                 }
             }
         }
-        private static void sw_instruccion(int[] instru)
-        {//Write Through y No Write Allocate
+        private static void logica_lw(ref int[,] cache, int bloqueDelDato, int palabraDelDato, int X)
+        {
+            //subir bloque a caché
+            for (int i = 0; i < 4; i++)
+            {
+                cache[i, bloque_a_cache(bloqueDelDato) * 4] = mem_principal_instruc[PC];
+            }
+            cache_instruc[4, bloque_a_cache(bloqueDelDato) * 4] = bloqueDelDato;
+
+            //Imprimir caché de datos
+            for (int i = 0; i < 5; i++)
+            {
+                for (int j = 0; j < 16; j++)
+                {
+                    Console.Write(cache[i, j] + "  ");
+                }
+                Console.Write("\n\n");
+            }
+
+            int contenidoDeMem = cache[palabraDelDato, bloqueDelDato];
+            registros[X] = contenidoDeMem;
+        }
+
+        
+        private void sw_instruccion(int[] instru) {//Write Through y No Write Allocate
             int X = instru[2];
             int Y = instru[1];
             int n = instru[3];
 
             //Buscar en cache, instruccion
-            int direccionDelDato = registros[Y] + n;
+            int direccionDondeSeGuarda = registros[Y] + n;
 
             string hiloActual = System.Threading.Thread.CurrentThread.Name;
             switch (hiloActual)
             {
                 case "Nucleo1":
-                    sw_nucleo(direccionDelDato, X, ref cache_datos_1);
+                    sw_nucleo(direccionDondeSeGuarda, X, ref cache_datos_1, ref cache_datos_2, ref cache_datos_3);
                     break;
                 case "Nucleo2":
-                    sw_nucleo(direccionDelDato, X, ref cache_datos_2);
+                    sw_nucleo(direccionDondeSeGuarda, X, ref cache_datos_2, ref cache_datos_1, ref cache_datos_3);
                     break;
                 case "Nucleo3":
-                    sw_nucleo(direccionDelDato, X, ref cache_datos_3);
+                    sw_nucleo(direccionDondeSeGuarda, X, ref cache_datos_3, ref cache_datos_1, ref cache_datos_2);
                     break;
             }
-            //Escribir en Memoria[registro[y]+n] lo que esta en R[X]
         }
-        private static void sw_nucleo(int direccionDelDato, int X, ref int[,] cache)
-        {
+        private void sw_nucleo(int direccionDondeSeGuarda, int X, ref int[,] cache, ref int[,] primeraNoLocal, ref int[,] segundaNoLocal) {
+            int bloqueDelDato = dir_a_bloque(direccionDondeSeGuarda);
+            
+            if (cache_instruc[4, bloque_a_cache(bloqueDelDato) * 4] == bloqueDelDato)
+            {
+                for (int i = 0; i < 7; i++)
+                {
+                    barreraCicloReloj.SignalAndWait();
+                }
+                //LOCKs
+                todosLosLocks(false,direccionDondeSeGuarda,X, ref cache, ref primeraNoLocal, ref segundaNoLocal);
+            }
+            else
+            {
+                for (int i = 0; i < 28; i++)
+                {
+                    barreraCicloReloj.SignalAndWait();
+                }
+                //LOCKs
+                todosLosLocks(true, direccionDondeSeGuarda, X, ref cache, ref primeraNoLocal, ref segundaNoLocal);
 
+            }
+        }
+        private static void todosLosLocks(bool fue_fallo, int direccionDondeSeGuarda, int X, ref int[,] cache, ref int[,] primeraNoLocal, ref int[,] segundaNoLocal) {
+            bool accesoTodas = false;
+            while (accesoTodas == false)
+            {
+                bool lockLocal = false;
+                var temp1 = cache;
+                try//cacheLocal
+                {
+                    Monitor.Enter(temp1, ref lockLocal);
+
+                    bool lockMem = false;
+                    var tempMem = mem_principal_datos;
+                    try//memoriaDatos
+                    {
+                        Monitor.Enter(tempMem, ref lockMem);
+                        //CACHES NO LOCALES
+
+                        bool lockCache2 = false;
+                        var tempCache2 = primeraNoLocal;
+                        try//cache2--------------------------------------------------------------------------
+                        {
+                            Monitor.Enter(tempCache2, ref lockCache2);
+
+                            bool lockCache3 = false;
+                            var tempCache3 = segundaNoLocal;
+                            try//cache3------------------------------------------------------------
+                            {
+                                Monitor.Enter(tempCache3, ref lockCache3);
+                                //LOGICA
+                                if (fue_fallo)
+                                {
+                                    //se escribe solo en memoria
+                                    mem_principal_datos[direccionDondeSeGuarda]=registros[X];
+                                }
+                                else {
+                                    //se escribe en cache y en memoria
+                                    cache[dir_a_palabra(direccionDondeSeGuarda), bloque_a_cache(dir_a_bloque(direccionDondeSeGuarda))] = registros[X];
+                                    mem_principal_datos[direccionDondeSeGuarda] = registros[X];
+                                }
+                                accesoTodas = true;
+                            }
+                            finally
+                            {
+                                if (lockCache3)
+                                {
+                                    Monitor.Exit(tempCache3);
+                                }
+                            }//cache3--------------------------------------------------------------
+                        }
+                        finally//cache2
+                        {
+                            if (lockCache2)
+                            {
+                                Monitor.Exit(tempCache2);
+                            }
+                        }//cache2-----------------------------------------------------------------------------
+
+                    }
+                    finally//memoriaDatos
+                    {
+                        if (lockMem)
+                        {
+                            Monitor.Exit(tempMem);
+                        }
+                    }
+                }
+                finally//cacheLocal
+                {
+                    if (lockLocal)
+                    {
+                        Monitor.Exit(temp1);
+                    }
+                }
+                barreraCicloReloj.SignalAndWait(); //tratando de hacer el LOCK, se cuentan ciclos de reloj
+            }
         }
 
     }
