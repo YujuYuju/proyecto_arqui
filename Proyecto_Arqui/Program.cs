@@ -16,13 +16,19 @@ namespace Proyecto_Arqui
         static int[,] cache_datos_2;            //matriz de cache de datos 2
         static int[,] cache_datos_3;            //matriz de cache de datos 3 
         static bool lento;
+        private static bool leer_instruccion_bool;
 
         //VARIABLE LOCALES-locales a cada thread
-        [ThreadStatic] static int quantum;          //cantidad de instrucciones ejecutadas
-        [ThreadStatic] static int[,] cache_instruc; //matriz de cache de instrucciones
-        [ThreadStatic] static int[] registros;      //registros propios del nucleo
-        [ThreadStatic] static int PC;               //la siguiente instruccion a ejecutar
-        [ThreadStatic] static int hilillo_actual;	//cual hilillo se esta ejecutando en un nucleo dado
+        [ThreadStatic]
+        static int quantum;          //cantidad de instrucciones ejecutadas
+        [ThreadStatic]
+        static int[,] cache_instruc; //matriz de cache de instrucciones
+        [ThreadStatic]
+        static int[] registros;      //registros propios del nucleo
+        [ThreadStatic]
+        static int PC;               //la siguiente instruccion a ejecutar
+        [ThreadStatic]
+        static int hilillo_actual;	//cual hilillo se esta ejecutando en un nucleo dado
 
         static List<int> hilillos_tomados;
         int ultimo_mem_inst;            //'puntero' a ultimo lleno en memoria de instrucciones
@@ -188,10 +194,11 @@ namespace Proyecto_Arqui
             }
         }
 
-        static void leerInstruccion() {
+        static void leerInstruccion()
+        {
             //Buscar en cache, instruccion
             int bloque = dir_a_bloque(PC);
-            if (cache_instruc[4, bloque_a_cache(bloque)*4] == bloque)
+            if (cache_instruc[4, bloque_a_cache(bloque) * 4] == bloque)
             {
                 ejecutarInstruccion();
             }
@@ -206,55 +213,54 @@ namespace Proyecto_Arqui
                 bool accesoInstrucciones = false;
                 while (accesoInstrucciones == false)
                 {
-                    bool lockWasTaken = false;
-                    var temp = mem_principal_instruc;
-                    try
+                    if (Monitor.TryEnter(mem_principal_instruc))
                     {
-                        Monitor.Enter(temp, ref lockWasTaken);
                         accesoInstrucciones = true;
-                        int t = mem_principal_instruc[PC];
-
                         //subir bloque a caché
                         int acum = 0;
                         for (int i = 0; i < 4; i++)
                         {
                             for (int j = 0; j < 4; j++, acum++)
                             {
-                                cache_instruc[i, j+bloque_a_cache(bloque)*4] = mem_principal_instruc[PC + acum];
+                                cache_instruc[i, j + bloque_a_cache(bloque) * 4] = mem_principal_instruc[PC + acum];
                             }
                         }
+
                         int tem = bloque_a_cache(bloque);
-                        cache_instruc[4, bloque_a_cache(bloque)*4] = bloque;
+                        cache_instruc[4, bloque_a_cache(bloque) * 4] = bloque;
 
                         //Imprimir caché de instrucciones
                         for (int i = 0; i < 5; i++)
                         {
                             for (int j = 0; j < 16; j++)
                             {
-                                Console.Write (cache_instruc[i, j] + "  ");
+                                Console.Write(cache_instruc[i, j] + "  ");
                             }
                             Console.Write("\n\n");
                         }
 
                         ejecutarInstruccion();
                     }
-                    finally
-                    {
-                        if (lockWasTaken)
-                        {
-                            Monitor.Exit(temp);
-                        }
-                    }
-                    barreraCicloReloj.SignalAndWait(); //tratando de hacer el LOCK, se cuentan ciclos de reloj
+                    else
+                        barreraCicloReloj.SignalAndWait(); //tratando de hacer el LOCK, se cuentan ciclos de reloj
                 }
             }
         }
 
-        static void ejecutarInstruccion() {
-            //leer cuatro palabras usando direccion_a_vectorInstrucciones
-            //identificar instrucción con su lógica. Se entra al CASE
 
-            //hacer partes para el for, de accesos de memoria para datos
+        static void ejecutarInstruccion()
+        {
+            int bloque = dir_a_bloque(PC);
+            bloque = bloque_a_cache(bloque);
+            bloque *= 4;
+            int palabra = dir_a_palabra(PC);
+            int[] instruccion = new int[4];
+            instruccion[0] = cache_instruc[palabra, bloque];
+            instruccion[1] = cache_instruc[palabra, bloque + 1];
+            instruccion[2] = cache_instruc[palabra, bloque + 2];
+            instruccion[3] = cache_instruc[palabra, bloque + 3];
+            reDireccionarInstruccion(instruccion);
+            int k = 0;
             //poner barreras para el paso de instrucciones y manejar el reloj global
 
             //PC+=4
@@ -271,7 +277,8 @@ namespace Proyecto_Arqui
                     {
                         cache_instruc[i, j] = -1;
                     }
-                    else {
+                    else
+                    {
                         cache_instruc[i, j] = 0;
                     }
                 }
@@ -284,7 +291,7 @@ namespace Proyecto_Arqui
             escogerHilillo();
             Console.WriteLine(System.Threading.Thread.CurrentThread.Name + " tiene que ejecutar la instruccion en direccion " + PC);
             leerInstruccion();
-            
+
 
 
             //Hacer cambio de contexto, cuando se termina una instrucción
@@ -371,22 +378,16 @@ namespace Proyecto_Arqui
             nucleo3.Join();
 
             Console.Write(" Hilillos tomados: ");
-            for (int i = 0; i < hilillos_tomados.Count; i++) {
+            for (int i = 0; i < hilillos_tomados.Count; i++)
+            {
                 Console.Write(hilillos_tomados[i] + " ");
             }
-            
+
             Console.ReadKey();
         }
 
-
-
-
-
-
-
-
         /*Instrucciones----------------------------------------------------------*/
-        public void reDireccionarInstruccion(int[] instruc)
+        public static void reDireccionarInstruccion(int[] instruc)
         {
 
             int operacion = instruc[0];
@@ -431,96 +432,92 @@ namespace Proyecto_Arqui
             }
         }
 
-        private void daddi_instruccion(int[] instru)
+        private static void daddi_instruccion(int[] instru)
         {
-            int param_1 = instru[1];
-            int param_2 = registros[instru[2]];
+            int param_1 = registros[instru[1]];
             int param_3 = instru[3];
 
-            registros[param_1] = param_2 + param_3;
-
+            registros[instru[2]] = param_1 + param_3;
+            barreraCicloReloj.SignalAndWait();
         }
-        private void dadd_instruccion(int[] instru)
+
+        private static void dadd_instruccion(int[] instru)
         {
-            int param_1 = instru[1];
+            int param_1 = registros[instru[1]];
             int param_2 = registros[instru[2]];
-            int param_3 = registros[instru[3]];
 
-            registros[param_1] = param_2 + param_3;
-
+            registros[instru[3]] = param_1 + param_2;
+            barreraCicloReloj.SignalAndWait();
         }
-        private void dsub_instruccion(int[] instru)
+        private static void dsub_instruccion(int[] instru)
         {
-            int param_1 = instru[1];
+            int param_1 = registros[instru[1]];
             int param_2 = registros[instru[2]];
-            int param_3 = registros[instru[3]];
 
-            registros[param_1] = param_2 - param_3;
+            registros[instru[3]] = param_1 - param_2;
+            barreraCicloReloj.SignalAndWait();
         }
-        private void dmul_instruccion(int[] instru)
+        private static void dmul_instruccion(int[] instru)
         {
-            int param_1 = instru[1];
+            int param_1 = registros[instru[1]];
             int param_2 = registros[instru[2]];
-            int param_3 = registros[instru[3]];
 
-            registros[param_1] = param_2 * param_3;
+            registros[instru[3]] = param_1 * param_2;
+            barreraCicloReloj.SignalAndWait();
         }
-        private void ddiv_instruccion(int[] instru)
+        private static void ddiv_instruccion(int[] instru)
         {
-            int param_1 = instru[1];
+            int param_1 = registros[instru[1]];
             int param_2 = registros[instru[2]];
-            int param_3 = registros[instru[3]];
 
-            registros[param_1] = param_2 / param_3;
+            registros[instru[3]] = param_1 / param_2;
+            barreraCicloReloj.SignalAndWait();
         }
-		private void beqz_instruccion(int[] instru)
-		{
-			int param_1 = instru[1];
-			int param_2 = instru[2];
-			int param_3 = instru[3];
-
-			if (param_1 == param_2)
-			{
-				PC += param_3 * 4;
-			}
-		}
-
-        private void bnez_instruccion(int[] instru)
+        private static void beqz_instruccion(int[] instru)
         {
-			int param_1 = instru[1];
-			int param_2 = instru[2];
-			int param_3 = instru[3];
+            int param_1 = registros[instru[1]];
+            int param_2 = instru[2];
+            int param_3 = instru[3];
 
-			if (param_1 != param_2)
-			{
-				PC += param_3 * 4;
-			}
+            if (param_1 == param_2)
+            {
+                PC += param_3 * 4;
+            }
+            barreraCicloReloj.SignalAndWait();
         }
-        private void jal_instruccion(int[] instru)
+
+        private static void bnez_instruccion(int[] instru)
         {
-			int param_1 = instru[1];
-			int param_2 = instru[2];
-			int param_3 = instru[3];
+            int param_1 = registros[instru[1]];
+            int param_2 = instru[2];
+            int param_3 = instru[3];
 
-			PC += param_3;
-			registros[31] = PC;
-
+            if (param_1 != param_2)
+            {
+                PC += param_3 * 4;
+            }
+            barreraCicloReloj.SignalAndWait();
         }
-        private void jr_instruccion(int[] instru)
+        private static void jal_instruccion(int[] instru)
+        {
+            registros[31] = PC;
+            PC += instru[3];
+            barreraCicloReloj.SignalAndWait();
+        }
+        private static void jr_instruccion(int[] instru)
         {
             PC = registros[instru[1]];
+            barreraCicloReloj.SignalAndWait();
         }
 
-        private void fin_instruccion(int[] instru)
+        private static void fin_instruccion(int[] instru)
         //poner en matriz de contextos un finalizado
         {
             mat_contextos[hilillo_actual, 34] = 1;
+            barreraCicloReloj.SignalAndWait();
         }
-
-
-
-
-        private void lw_instruccion(int[] instru) {
+        private static void lw_instruccion(int[] instru)
+        {
             int X = instru[2];
             int Y = instru[1];
             int n = instru[3];
@@ -545,7 +542,7 @@ namespace Proyecto_Arqui
             //Mem=lo cargado de Memoria[registros[Y]+n]
             //registros[X] = Mem;
         }
-        private void lw_nucleo(int direccionDelDato, int X, ref int[,] cache)
+        private static void lw_nucleo(int direccionDelDato, int X, ref int[,] cache)
         {
             int bloqueDelDato = dir_a_bloque(direccionDelDato);
             int palabraDelDato = dir_a_palabra(direccionDelDato);
@@ -620,7 +617,8 @@ namespace Proyecto_Arqui
                 }
             }
         }
-        private void sw_instruccion(int[] instru) {//Write Through y No Write Allocate
+        private static void sw_instruccion(int[] instru)
+        {//Write Through y No Write Allocate
             int X = instru[2];
             int Y = instru[1];
             int n = instru[3];
@@ -643,7 +641,8 @@ namespace Proyecto_Arqui
             }
             //Escribir en Memoria[registro[y]+n] lo que esta en R[X]
         }
-        private void sw_nucleo(int direccionDelDato, int X, ref int[,] cache) {
+        private static void sw_nucleo(int direccionDelDato, int X, ref int[,] cache)
+        {
 
         }
 
