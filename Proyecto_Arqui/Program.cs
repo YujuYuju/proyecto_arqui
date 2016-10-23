@@ -528,6 +528,8 @@ namespace Proyecto_Arqui
                 mat_contextos[hilillo_actual - 1, 32] = PC;
                 //escoger hilillo de nuevo
                 escogerHililloNuevo();
+                Console.Write("\n**Se ha realizado un cambio de contexto\n**La matriz de contextos se ve asi:\n");
+               // PrintMatriz(mat_contextos);
             }
         }
         static void escogerHililloNuevo()
@@ -535,7 +537,7 @@ namespace Proyecto_Arqui
             bool hilillo_nuevo_escogido = false;
             while (hilillo_nuevo_escogido == false)
             {
-                int indiceATomar = 0;
+                int indiceATomar = -1;
                 hilillo_nuevo_escogido = true;
                 for (int i = 0; i < mat_contextos.GetLength(0); i++)
                 {
@@ -545,13 +547,13 @@ namespace Proyecto_Arqui
                         break;
                     }
                 }
-                if (indiceATomar != 0)
+                if (indiceATomar != -1)
                 {
                     if (Monitor.TryEnter(mat_contextos))
                     {
                         try
                         {
-                            hilillos_tomados.Remove(indiceATomar + 1);
+                            hilillos_tomados.Remove(hilillo_actual);
                             hilillos_tomados.Add(indiceATomar + 1);  //poner numero de hilillo, correspondiente con el PC
                             hilillo_actual = indiceATomar + 1;
                             PC = mat_contextos[indiceATomar, 32];
