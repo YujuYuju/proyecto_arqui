@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 
 namespace Proyecto_Arqui
@@ -31,6 +30,9 @@ namespace Proyecto_Arqui
         [ThreadStatic]
         static int hilillo_actual;	//cual hilillo se esta ejecutando en un nucleo dado
 
+        [ThreadStatic]
+        private static bool finished;
+
         static List<int> hilillos_tomados;
         int ultimo_mem_inst;            //'puntero' a ultimo lleno en memoria de instrucciones
         static int cant_hilillos;       //cantidad de hilillos definida por el usuario
@@ -45,7 +47,8 @@ namespace Proyecto_Arqui
         }
         private static int dir_a_palabra(int direccion)//regresa el numero de palabra
         {
-            return (direccion % 16) / 4;
+            int x = 21;
+            return (direccion % (x) / 4);
         }
         private static int bloque_a_cache(int bloque)
         {
@@ -86,8 +89,10 @@ namespace Proyecto_Arqui
                 }
             }
         }
-        private static void inicializarMemorias(ref int[] matriz) {
-            for (int i = 0; i < matriz.Length; i++) {
+        private static void inicializarMemorias(ref int[] matriz)
+        {
+            for (int i = 0; i < matriz.Length; i++)
+            {
                 matriz[i] = 1;
             }
         }
@@ -115,7 +120,7 @@ namespace Proyecto_Arqui
             {
                 mem_principal_instruc[ultimo_mem_inst++] = Int32.Parse(s);
             }
-            mat_contextos[i-1, 32] = ultimo_viejo;   //el PC
+            mat_contextos[i - 1, 32] = ultimo_viejo;   //el PC
 
         }
         public void leer_muchos_hilillos()//permite cargar todos los hilillos desde el txt a memoria
@@ -207,10 +212,12 @@ namespace Proyecto_Arqui
                                     cache_instruc[i, j + bloque_a_cache(bloque) * 4] = mem_principal_instruc[PC + acum];
                                 }
                             }
-
-                            int tem = bloque_a_cache(bloque);
+                            //onsole.WriteLine("memoria principal");
+                            //PrintVector(mem_principal_instruc);
+                            //int tem = bloque_a_cache(bloque);
                             cache_instruc[4, bloque_a_cache(bloque) * 4] = bloque;
-
+                            //Console.WriteLine("Cache de instrucciones");
+                            //PrintMatriz(cache_instruc);
                         }
                         finally
                         {
@@ -222,7 +229,7 @@ namespace Proyecto_Arqui
                     {
                         barreraCicloReloj.SignalAndWait(); //tratando de hacer el LOCK, se cuentan ciclos de reloj
                     }
-                        
+
                 }
             }
         }
@@ -233,20 +240,22 @@ namespace Proyecto_Arqui
             int bloque = dir_a_bloque(PC);
             bloque = bloque_a_cache(bloque);
             bloque *= 4;
-            int palabra = dir_a_palabra(PC);
+            int palabra = dir_a_palabra(PC) % 4;
             int[] instruccion = new int[4];
             instruccion[0] = cache_instruc[palabra, bloque];
             instruccion[1] = cache_instruc[palabra, bloque + 1];
             instruccion[2] = cache_instruc[palabra, bloque + 2];
             instruccion[3] = cache_instruc[palabra, bloque + 3];
             reDireccionarInstruccion(instruccion);
-            int k = 0;
-
-            if (instruccion[0]!= 4 && instruccion[0] != 5 && instruccion[0] != 3 && instruccion[0] != 2){
+            quantum++;
+            Console.WriteLine("Quatum: " + quantum);
+            if (instruccion[0] != 4 && instruccion[0] != 5 && instruccion[0] != 3 && instruccion[0] != 2)
+            {
                 PC += 4;
             }
-            
         }
+
+
         private static void procesoDelNucelo()
         {
             //INICIALIZACION
@@ -271,9 +280,16 @@ namespace Proyecto_Arqui
 
             //PROCESO DEL NUCLEO---------------------------------------------------------------------------------------------------
             escogerHilillo();
-            Console.WriteLine(System.Threading.Thread.CurrentThread.Name + " tiene que ejecutar la instruccion en direccion " + PC);
-            leerInstruccion();
-
+            while (mat_contextos[hilillo_actual - 1, 34] != 1)
+            {
+                Console.WriteLine(System.Threading.Thread.CurrentThread.Name +
+                                  " tiene que ejecutar la instruccion en direccion " + PC);
+                leerInstruccion();
+                revisarSiCambioContexto();
+                if (lento)
+                    Console.ReadKey();
+            }
+            barreraCicloReloj.RemoveParticipant();
 
 
             //Hacer cambio de contexto, cuando se termina una instrucción
@@ -313,17 +329,19 @@ namespace Proyecto_Arqui
         /*MAIN---------------------------------------------------------------*/
         static void Main(string[] args)
         {
-            barreraCicloReloj = new Barrier(3,
+            Program p = new Program();
+            p.menu_usuario();
+            p.leer_muchos_hilillos();
+            modoDeEjejcucion();
+            int cantidad = cant_hilillos > 3 ? 3 : cant_hilillos;
+            barreraCicloReloj = new Barrier(cantidad,
                 b =>
                 { // This method is only called when all the paricipants arrived.
                     //Console.WriteLine("Todos han llegado.");
                     ciclos_reloj++;
                     //Console.WriteLine("Ciclos de reloj hasta ahora: {0}", ciclos_reloj);
                 });
-            Program p = new Program();
-            p.menu_usuario();
-            p.leer_muchos_hilillos();
-            modoDeEjejcucion();
+
             //IMPRESION DE MEMORIA INSTRUCCIONES
             for (int i = 0; i < mem_principal_instruc.Length; i++)
             {
@@ -421,9 +439,6 @@ namespace Proyecto_Arqui
 
             registros[instru[2]] = param_1 + param_3;
             barreraCicloReloj.SignalAndWait();
-            quantum++;
-            Console.Write(quantum);
-            revisarSiCambioContexto();
         }
         private static void dadd_instruccion(int[] instru)
         {
@@ -432,9 +447,6 @@ namespace Proyecto_Arqui
 
             registros[instru[3]] = param_1 + param_2;
             barreraCicloReloj.SignalAndWait();
-            quantum++;
-            Console.Write(quantum);
-            revisarSiCambioContexto();
         }
         private static void dsub_instruccion(int[] instru)
         {
@@ -443,9 +455,6 @@ namespace Proyecto_Arqui
 
             registros[instru[3]] = param_1 - param_2;
             barreraCicloReloj.SignalAndWait();
-            quantum++;
-            revisarSiCambioContexto();
-            Console.Write(quantum);
         }
         private static void dmul_instruccion(int[] instru)
         {
@@ -454,9 +463,6 @@ namespace Proyecto_Arqui
 
             registros[instru[3]] = param_1 * param_2;
             barreraCicloReloj.SignalAndWait();
-            quantum++;
-            revisarSiCambioContexto();
-            Console.Write(quantum);
         }
         private static void ddiv_instruccion(int[] instru)
         {
@@ -465,9 +471,6 @@ namespace Proyecto_Arqui
 
             registros[instru[3]] = param_1 / param_2;
             barreraCicloReloj.SignalAndWait();
-            quantum++;
-            revisarSiCambioContexto();
-            Console.Write(quantum);
         }
         private static void beqz_instruccion(int[] instru)
         {
@@ -480,9 +483,6 @@ namespace Proyecto_Arqui
                 PC += param_3 * 4;
             }
             barreraCicloReloj.SignalAndWait();
-            quantum++;
-            revisarSiCambioContexto();
-            Console.Write(quantum);
         }
         private static void bnez_instruccion(int[] instru)
         {
@@ -495,47 +495,39 @@ namespace Proyecto_Arqui
                 PC += param_3 * 4;
             }
             barreraCicloReloj.SignalAndWait();
-            quantum++;
-            revisarSiCambioContexto();
-            Console.Write(quantum);
         }
         private static void jal_instruccion(int[] instru)
         {
             registros[31] = PC;
             PC += instru[3];
             barreraCicloReloj.SignalAndWait();
-            quantum++;
-            revisarSiCambioContexto();
-            Console.Write(quantum);
         }
         private static void jr_instruccion(int[] instru)
         {
             PC = registros[instru[1]];
             barreraCicloReloj.SignalAndWait();
-            quantum++;
-            revisarSiCambioContexto();
-            Console.Write(quantum);
         }
         private static void fin_instruccion(int[] instru)
-        //poner en matriz de contextos un finalizado
         {
-            mat_contextos[hilillo_actual, 34] = 1;
+            mat_contextos[hilillo_actual - 1, 34] = 1;
+            finished = true;
             barreraCicloReloj.SignalAndWait();
             quantum++;
         }
 
-        private static void revisarSiCambioContexto() {
-            if (quantum == quantum_total)
+        private static void revisarSiCambioContexto()
+        {
+            if (quantum == quantum_total || mat_contextos[hilillo_actual - 1, 34] == 1)
             {
                 //hacer cambio de contexto
-                for(int i=0; i<32; i++)
+                quantum = 0;
+                for (int i = 0; i < 32; i++)
                 {
-                    mat_contextos[hilillo_actual-1, i] = registros[i];
+                    mat_contextos[hilillo_actual - 1, i] = registros[i];
                 }
                 mat_contextos[hilillo_actual - 1, 32] = PC;
                 //escoger hilillo de nuevo
                 escogerHililloNuevo();
-
             }
         }
         static void escogerHililloNuevo()
@@ -544,9 +536,10 @@ namespace Proyecto_Arqui
             while (hilillo_nuevo_escogido == false)
             {
                 int indiceATomar = 0;
-                for (int i=0; i<mat_contextos.Length; i++)
+                hilillo_nuevo_escogido = true;
+                for (int i = 0; i < mat_contextos.GetLength(0); i++)
                 {
-                    if (mat_contextos[i,34] != 1 && !hilillos_tomados.Contains(i-1))
+                    if (mat_contextos[i, 34] != 1 && !hilillos_tomados.Contains(i + 1))
                     {
                         indiceATomar = i;
                         break;
@@ -558,20 +551,24 @@ namespace Proyecto_Arqui
                     {
                         try
                         {
+                            hilillos_tomados.Remove(indiceATomar + 1);
                             hilillos_tomados.Add(indiceATomar + 1);  //poner numero de hilillo, correspondiente con el PC
                             hilillo_actual = indiceATomar + 1;
                             PC = mat_contextos[indiceATomar, 32];
-                            hilillo_nuevo_escogido = true;
                             Console.WriteLine(System.Threading.Thread.CurrentThread.Name + " tomo el hilillo " + (indiceATomar + 1));
                             for (int i = 0; i < 32; i++)
                             {
-                                registros[i]= mat_contextos[hilillo_actual - 1, i];
+                                registros[i] = mat_contextos[hilillo_actual - 1, i];
                             }
                         }
                         finally
                         {
                             Monitor.Exit(mat_contextos);
                         }
+                    }
+                    else
+                    {
+                        hilillo_nuevo_escogido = false;
                     }
                 }
             }
@@ -602,8 +599,8 @@ namespace Proyecto_Arqui
                     lw_nucleo(direccionDelDato, X, ref cache_datos_3);
                     break;
             }
-            quantum++;
-            Console.Write(quantum);
+            //quantum++;
+            //Console.Write(quantum);
             //Mem=lo cargado de Memoria[registros[Y]+n]
             //registros[X] = Mem;
         }
@@ -626,7 +623,7 @@ namespace Proyecto_Arqui
                 }
 
                 //LOCKs
-                bool pasoLockDeAdentro=false;
+                bool pasoLockDeAdentro = false;
 
                 bool accesoDeCacheLocal = false;
                 while (accesoDeCacheLocal == false)
@@ -668,7 +665,7 @@ namespace Proyecto_Arqui
                         if (!pasoLockDeAdentro)
                             barreraCicloReloj.SignalAndWait(); //tratando de hacer el LOCK, se cuentan ciclos de reloj
                     }
-                    
+
                 }
             }
         }
@@ -695,8 +692,9 @@ namespace Proyecto_Arqui
             registros[X] = contenidoDeMem;
         }
 
-        
-        private static void sw_instruccion(int[] instru) {//Write Through y No Write Allocate
+
+        private static void sw_instruccion(int[] instru)
+        {//Write Through y No Write Allocate
             int X = instru[2];
             int Y = instru[1];
             int n = instru[3];
@@ -717,12 +715,13 @@ namespace Proyecto_Arqui
                     sw_nucleo(direccionDondeSeGuarda, X, ref cache_datos_3, ref cache_datos_1, ref cache_datos_2);
                     break;
             }
-            quantum++;
-            Console.Write(quantum);
+            //quantum++;
+            //Console.Write(quantum);
         }
-        private static void sw_nucleo(int direccionDondeSeGuarda, int X, ref int[,] cache, ref int[,] primeraNoLocal, ref int[,] segundaNoLocal) {
+        private static void sw_nucleo(int direccionDondeSeGuarda, int X, ref int[,] cache, ref int[,] primeraNoLocal, ref int[,] segundaNoLocal)
+        {
             int bloqueDelDato = dir_a_bloque(direccionDondeSeGuarda);
-            
+
             if (cache_instruc[4, bloque_a_cache(bloqueDelDato) * 4] == bloqueDelDato)
             {
                 for (int i = 0; i < 7; i++)
@@ -730,7 +729,7 @@ namespace Proyecto_Arqui
                     barreraCicloReloj.SignalAndWait();
                 }
                 //LOCKs
-                todosLosLocks(false,direccionDondeSeGuarda,X, ref cache, ref primeraNoLocal, ref segundaNoLocal);
+                todosLosLocks(false, direccionDondeSeGuarda, X, ref cache, ref primeraNoLocal, ref segundaNoLocal);
             }
             else
             {
@@ -743,7 +742,8 @@ namespace Proyecto_Arqui
 
             }
         }
-        private static void todosLosLocks(bool fue_fallo, int direccionDondeSeGuarda, int X, ref int[,] cache, ref int[,] primeraNoLocal, ref int[,] segundaNoLocal) {
+        private static void todosLosLocks(bool fue_fallo, int direccionDondeSeGuarda, int X, ref int[,] cache, ref int[,] primeraNoLocal, ref int[,] segundaNoLocal)
+        {
             bool algunoNOseObtuvo = false;
 
             bool accesoTodas = false;
@@ -828,6 +828,26 @@ namespace Proyecto_Arqui
             }
         }
 
+        private static void PrintMatriz(int[,] matriz)
+        {
+            for (int i = 0; i < matriz.GetLength(0); i++)
+            {
+                for (int j = 0; j < matriz.GetLength(1); j++)
+                {
+                    Console.Write(" " + matriz[i, j]);
+                }
+                Console.WriteLine("");
+            }
+        }
+
+        private static void PrintVector(int[] vector)
+        {
+            for (int i = 0; i < vector.GetLength(0); i++)
+            {
+                Console.Write(" " + vector[i]);
+            }
+            Console.WriteLine("");
+        }
     }
 }
 
