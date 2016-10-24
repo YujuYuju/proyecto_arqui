@@ -47,7 +47,7 @@ namespace Proyecto_Arqui
         }
         private static int dir_a_palabra(int direccion)//regresa el numero de palabra
         {
-            int x = 21;
+            int x = 16;
             return (direccion % (x) / 4);
         }
         private static int bloque_a_cache(int bloque)
@@ -59,7 +59,7 @@ namespace Proyecto_Arqui
         /*Inicio del programa-----------------------------------------------*/
         public Program() //constructor, se inicializan las variables
         {
-            mem_principal_datos = new int[96];
+            mem_principal_datos = new int[384];
             inicializarMemorias(ref mem_principal_datos);
             mem_principal_instruc = new int[640];
             inicializarMemorias(ref mem_principal_instruc);
@@ -390,7 +390,6 @@ namespace Proyecto_Arqui
         /*Instrucciones----------------------------------------------------------*/
         public static void reDireccionarInstruccion(int[] instruc)
         {
-
             int operacion = instruc[0];
             switch (operacion)
             {
@@ -483,6 +482,10 @@ namespace Proyecto_Arqui
             {
                 PC += param_3 * 4;
             }
+            else
+            {
+                PC += 4;
+            }
             barreraCicloReloj.SignalAndWait();
         }
         private static void bnez_instruccion(int[] instru)
@@ -494,6 +497,10 @@ namespace Proyecto_Arqui
             if (param_1 != param_2)
             {
                 PC += param_3 * 4;
+            }
+            else
+            {
+                PC += 4;
             }
             barreraCicloReloj.SignalAndWait();
         }
@@ -677,19 +684,12 @@ namespace Proyecto_Arqui
             //subir bloque a caché
             for (int i = 0; i < 4; i++)
             {
-                cache[i, bloque_a_cache(bloqueDelDato) * 4] = mem_principal_instruc[PC];
+                cache[bloque_a_cache(bloqueDelDato) * 4, i] = mem_principal_instruc[PC];
             }
             cache_instruc[4, bloque_a_cache(bloqueDelDato) * 4] = bloqueDelDato;
 
             //Imprimir caché de datos
-            for (int i = 0; i < 5; i++)
-            {
-                for (int j = 0; j < 16; j++)
-                {
-                    Console.Write(cache[i, j] + "  ");
-                }
-                Console.Write("\n\n");
-            }
+            PrintMatriz(cache);
 
             int contenidoDeMem = cache[palabraDelDato, bloqueDelDato];
             registros[X] = contenidoDeMem;
