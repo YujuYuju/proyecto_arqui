@@ -185,9 +185,9 @@ namespace Proyecto_Arqui
             int bloque = dir_a_bloque(PC);
             if (cache_instruc[4, bloque_a_cache(bloque) * 4] == bloque)
             {
-                ejecutarInstruccion();
+                ejecutarInstruccion(); //La instruccion estaba en cache, ejecutarla
             }
-            else
+            else //subir el bloque con la instruccion a cache
             {
                 for (int i = 0; i < 28; i++)
                 {
@@ -248,7 +248,7 @@ namespace Proyecto_Arqui
             instruccion[3] = cache_instruc[palabra, bloque + 3];
             reDireccionarInstruccion(instruccion);
             quantum++;
-            Console.WriteLine("Quatum: " + quantum);
+            Console.WriteLine("Quatum del nucleo: " + quantum);
             if (instruccion[0] != 4 && instruccion[0] != 5 && instruccion[0] != 3 && instruccion[0] != 2)
             {
                 PC += 4;
@@ -343,7 +343,7 @@ namespace Proyecto_Arqui
                 });
 
             //IMPRESION DE MEMORIA INSTRUCCIONES
-            for (int i = 0; i < mem_principal_instruc.Length; i++)
+          /*  for (int i = 0; i < mem_principal_instruc.Length; i++)
             {
                 if (mem_principal_instruc[i] != 1)
                 {
@@ -354,6 +354,7 @@ namespace Proyecto_Arqui
                     }
                 }
             }
+            */
             /*//IMPRESION DE MATRIZ DE CONTEXTOS
             for (int i = 0; i < cant_hilillos; i++)
             {
@@ -528,7 +529,7 @@ namespace Proyecto_Arqui
                 mat_contextos[hilillo_actual - 1, 32] = PC;
                 //escoger hilillo de nuevo
                 escogerHililloNuevo();
-                Console.Write("\n**Se ha realizado un cambio de contexto\n**La matriz de contextos se ve asi:\n");
+                Console.Write("\n**Se ha realizado un cambio de contexto\n");
                // PrintMatriz(mat_contextos);
             }
         }
