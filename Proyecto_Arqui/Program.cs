@@ -325,6 +325,25 @@ namespace Proyecto_Arqui
 
         }
 
+		public static void infoFinSimulacion() {
+			Console.WriteLine("\n**Fin de la Simulacion**\n\nLe memoria compartida quedo asi:\n");
+			PrintVector(mem_principal_datos);
+			Console.WriteLine("\nPara cada hilillo que corrio:\n");
+
+			for (int i = 0; i < mat_contextos.GetLength(0); i++)
+			{
+				Console.Write("\n Registros: ");
+				for (int j = 0; j < 32; j++)
+				{
+					Console.Write(" " + mat_contextos[i, j]);
+				}
+				Console.Write("\nEl RL es: " + mat_contextos[i, 33]);
+				Console.WriteLine("\nEste hilillo tardo "+ " ciclos en ejecutarse");
+			}
+			Console.WriteLine("\n**Fin de Hilillo**\n");
+
+		}
+
         /*-------------------------------------------------------------------*/
         /*MAIN---------------------------------------------------------------*/
         static void Main(string[] args)
