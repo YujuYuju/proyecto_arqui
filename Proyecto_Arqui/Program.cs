@@ -246,13 +246,10 @@ namespace Proyecto_Arqui
             instruccion[1] = cache_instruc[palabra, bloque + 1];
             instruccion[2] = cache_instruc[palabra, bloque + 2];
             instruccion[3] = cache_instruc[palabra, bloque + 3];
+            PC += 4;
             reDireccionarInstruccion(instruccion);
             quantum++;
-            Console.WriteLine("Quatum del nucleo: " + quantum);
-            if (instruccion[0] != 4 && instruccion[0] != 5 && instruccion[0] != 3 && instruccion[0] != 2)
-            {
-                PC += 4;
-            }
+            Console.WriteLine("Quatum del nucleo: " + quantum);            
         }
 
 
@@ -481,11 +478,7 @@ namespace Proyecto_Arqui
             if (param_1 == param_2)
             {
                 PC += param_3 * 4;
-            }
-            else
-            {
-                PC += 4;
-            }
+            }            
             barreraCicloReloj.SignalAndWait();
         }
         private static void bnez_instruccion(int[] instru)
@@ -497,11 +490,7 @@ namespace Proyecto_Arqui
             if (param_1 != param_2)
             {
                 PC += param_3 * 4;
-            }
-            else
-            {
-                PC += 4;
-            }
+            }           
             barreraCicloReloj.SignalAndWait();
         }
         private static void jal_instruccion(int[] instru)
