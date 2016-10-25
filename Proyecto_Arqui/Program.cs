@@ -67,9 +67,20 @@ namespace Proyecto_Arqui
             cache_datos_1 = new int[6, 4];
             cache_datos_2 = new int[6, 4];
             cache_datos_3 = new int[6, 4];
-            inicializarCache(ref cache_datos_1);
-            inicializarCache(ref cache_datos_2);
-            inicializarCache(ref cache_datos_3);
+
+            
+            cache_datos_1[4, 0] = -1;
+            cache_datos_1[4, 1] = -1;
+            cache_datos_1[4, 2] = -1;
+            cache_datos_1[4, 3] = -1;
+            cache_datos_2[4, 0] = -1;
+            cache_datos_2[4, 1] = -1;
+            cache_datos_2[4, 2] = -1;
+            cache_datos_2[4, 3] = -1;
+            cache_datos_3[4, 0] = -1;
+            cache_datos_3[4, 1] = -1;
+            cache_datos_3[4, 2] = -1;
+            cache_datos_3[4, 3] = -1;
 
             ultimo_mem_inst = 0;
             ciclos_reloj = 0;
@@ -77,17 +88,6 @@ namespace Proyecto_Arqui
             quantum_total = 0;
             file_path = "../../../Hilillos/";
             hilillos_tomados = new List<int>();
-        }
-        private static void inicializarCache(ref int[,] cache)
-        {
-            for (int i = 0; i < 6; i++)
-            {
-                for (int j = 0; j < 4; j++)
-                {
-                    cache[i, j] = 0;
-
-                }
-            }
         }
         private static void inicializarMemorias(ref int[] matriz)
         {
@@ -184,7 +184,7 @@ namespace Proyecto_Arqui
              return value.ToString("yyyyMMddhhmmssff");
          }
 
-    static void leerInstruccion()
+        static void leerInstruccion()
         {
             //Buscar en cache, instruccion
             int bloque = dir_a_bloque(PC);
@@ -291,11 +291,8 @@ namespace Proyecto_Arqui
                 if (lento)
                     Console.ReadKey();
             }
+            Console.WriteLine(System.Threading.Thread.CurrentThread.Name +"paro");
             barreraCicloReloj.RemoveParticipant();
-
-
-            //Hacer cambio de contexto, cuando se termina una instrucción
-            //Tomar en cuenta el quantum local
         }
 
 
@@ -367,19 +364,30 @@ namespace Proyecto_Arqui
             //crear nucleos
             var nucleo1 = new Thread(new ThreadStart(procesoDelNucelo));
             nucleo1.Name = String.Format("Nucleo{0}", 1);
-            nucleo1.Start();
+            
 
             var nucleo2 = new Thread(new ThreadStart(procesoDelNucelo));
             nucleo2.Name = String.Format("Nucleo{0}", 2);
-            nucleo2.Start();
 
             var nucleo3 = new Thread(new ThreadStart(procesoDelNucelo));
             nucleo3.Name = String.Format("Nucleo{0}", 3);
-            nucleo3.Start();
+            
+            if (cantidad == 1)
+            {
+                nucleo1.Start();
+            } else if (cantidad == 2)
+            {
+                nucleo2.Start();
+                nucleo3.Start();
+            } else
+            {
+                nucleo1.Start();
+                nucleo2.Start();
+                nucleo3.Start();
+            }
 
-            nucleo1.Join();
-            nucleo2.Join();
-            nucleo3.Join();
+            
+            
 
             Console.Write(" Hilillos tomados: ");
             for (int i = 0; i < hilillos_tomados.Count; i++)
@@ -617,9 +625,9 @@ namespace Proyecto_Arqui
             int palabraDelDato = dir_a_palabra(direccionDelDato);
 
 
-            if (cache_instruc[4, bloque_a_cache(bloqueDelDato) * 4] == bloqueDelDato)
+            if (cache[4, bloque_a_cache(bloqueDelDato)] == bloqueDelDato || cache[5, bloque_a_cache(bloqueDelDato)] == 1)
             {
-                int contenidoDeMem = cache[palabraDelDato, bloqueDelDato];
+                int contenidoDeMem = cache[palabraDelDato, bloque_a_cache(bloqueDelDato)];
                 registros[X] = contenidoDeMem;
             }
             else
@@ -647,9 +655,8 @@ namespace Proyecto_Arqui
                                 try
                                 {
                                     //Logica Instruccion-----------------------------------------
-                                    logica_lw(ref cache, bloqueDelDato, palabraDelDato, X);
+                                    logica_lw(ref cache, bloqueDelDato, palabraDelDato, X, direccionDelDato);
                                     accesoDeCacheLocal = true;
-                                    barreraCicloReloj.SignalAndWait();
                                     pasoLockDeAdentro = true;
                                 }
                                 finally
@@ -676,19 +683,19 @@ namespace Proyecto_Arqui
                 }
             }
         }
-        private static void logica_lw(ref int[,] cache, int bloqueDelDato, int palabraDelDato, int X)
+        private static void logica_lw(ref int[,] cache, int bloqueDelDato, int palabraDelDato, int X, int direccionDelDato)
         {
             //subir bloque a caché
             for (int i = 0; i < 4; i++)
             {
-                cache[bloque_a_cache(bloqueDelDato) * 4, i] = mem_principal_instruc[PC];
+                cache[i, bloque_a_cache(bloqueDelDato)] = mem_principal_datos[direccionDelDato/4];
             }
-            cache_instruc[4, bloque_a_cache(bloqueDelDato) * 4] = bloqueDelDato;
+            cache[4, bloque_a_cache(bloqueDelDato)] = bloqueDelDato;
 
             //Imprimir caché de datos
             PrintMatriz(cache);
 
-            int contenidoDeMem = cache[palabraDelDato, bloqueDelDato];
+            int contenidoDeMem = cache[palabraDelDato, bloque_a_cache(bloqueDelDato)];
             registros[X] = contenidoDeMem;
         }
 
@@ -765,6 +772,7 @@ namespace Proyecto_Arqui
                                 {
                                     try
                                     {
+                                        primeraNoLocal[5, bloque_a_cache(dir_a_bloque(direccionDondeSeGuarda))] = 1;//invalido
                                         //cache3------------------------------------------------------------
                                         if (Monitor.TryEnter(segundaNoLocal))
                                         {
@@ -782,6 +790,7 @@ namespace Proyecto_Arqui
                                                     cache[dir_a_palabra(direccionDondeSeGuarda), bloque_a_cache(dir_a_bloque(direccionDondeSeGuarda))] = registros[X];
                                                     mem_principal_datos[direccionDondeSeGuarda] = registros[X];
                                                 }
+                                                segundaNoLocal[5, bloque_a_cache(dir_a_bloque(direccionDondeSeGuarda))] = 1;//invalido]
                                                 accesoTodas = true;
                                             }
                                             finally
@@ -839,7 +848,6 @@ namespace Proyecto_Arqui
                 Console.WriteLine("");
             }
         }
-
         private static void PrintVector(int[] vector)
         {
             for (int i = 0; i < vector.GetLength(0); i++)
