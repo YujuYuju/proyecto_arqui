@@ -123,7 +123,7 @@ namespace Proyecto_Arqui
             {
                 mem_principal_instruc[ultimo_mem_inst++] = Int32.Parse(s);
             }
-            mat_contextos[i - 1, 32] = ultimo_viejo;   //el PC
+            mat_contextos[i - 1, 32] = ultimo_viejo+384;   //el PC
 
         }
         public void leer_muchos_hilillos()//permite cargar todos los hilillos desde el txt a memoria
@@ -190,7 +190,7 @@ namespace Proyecto_Arqui
         static void leerInstruccion()
         {
             //Buscar en cache, instruccion
-            int bloque = dir_a_bloque(PC);
+            int bloque = dir_a_bloque(PC-384);
             if (cache_instruc[4, bloque_a_cache(bloque) * 4] == bloque)
             {
                 ejecutarInstruccion(); //La instruccion estaba en cache, ejecutarla
@@ -217,7 +217,7 @@ namespace Proyecto_Arqui
                             {
                                 for (int j = 0; j < 4; j++, acum++)
                                 {
-                                    cache_instruc[i, j + bloque_a_cache(bloque) * 4] = mem_principal_instruc[PC + acum];
+                                    cache_instruc[i, j + bloque_a_cache(bloque) * 4] = mem_principal_instruc[PC-384 + acum];
                                 }
                             }
                             //onsole.WriteLine("memoria principal");
@@ -245,10 +245,10 @@ namespace Proyecto_Arqui
 
         static void ejecutarInstruccion()
         {
-            int bloque = dir_a_bloque(PC);
+            int bloque = dir_a_bloque(PC-384);
             bloque = bloque_a_cache(bloque);
             bloque *= 4;
-            int palabra = dir_a_palabra(PC) % 4;
+            int palabra = dir_a_palabra(PC-384) % 4;
             int[] instruccion = new int[4];
             instruccion[0] = cache_instruc[palabra, bloque];
             instruccion[1] = cache_instruc[palabra, bloque + 1];
