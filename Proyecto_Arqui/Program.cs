@@ -352,7 +352,7 @@ namespace Proyecto_Arqui
                 Console.WriteLine("\nEste hilillo tardo " + mat_contextos[i, 35] + " ciclos en ejecutarse");
                 Console.WriteLine("\n****Fin de Hilillo****\n");                            
         }
-            Console.WriteLine("\n**Fin de Hilillo**\n");
+            Console.WriteLine("\n**Fin de Info de Hilillos**\n");
 
         }
 
