@@ -162,7 +162,7 @@ namespace Proyecto_Arqui
                             {
                                 if (!hilillos_tomados.Contains(i + 1))
                                 {
-                                    mat_contextos[i, 35] -= long.Parse(GetTimestamp(DateTime.Now));
+                                    mat_contextos[i, 35] -= Int32.Parse(DateTime.Now.ToString("ddHHmmfff"));
                                     hilillos_tomados.Add(i + 1);  //poner numero de hilillo, correspondiente con el PC
                                     hilillo_actual = i + 1;
                                     PC = (int)mat_contextos[i, 32];
@@ -179,10 +179,7 @@ namespace Proyecto_Arqui
                 }
             }
         }
-        private static String GetTimestamp(DateTime value)
-         {
-             return value.ToString("yyyyMMddhhmmssff");
-         }
+
 
     static void leerInstruccion()
         {
@@ -327,7 +324,7 @@ namespace Proyecto_Arqui
 
         }
 
-        public static void infoFinSimulacion()
+        public void infoFinSimulacion()
         {
             Console.WriteLine("\n**Fin de la Simulacion**\n\nLe memoria compartida quedo asi:\n");
             PrintVector(mem_principal_datos);
@@ -344,7 +341,7 @@ namespace Proyecto_Arqui
                 Console.WriteLine("\nEste hilillo tardo " + mat_contextos[i, 35] + " ciclos en ejecutarse");
                 Console.WriteLine("\n****Fin de Hilillo****\n");                            
         }
-            Console.WriteLine("\n**Fin de Hilillo**\n");
+            Console.WriteLine("\n**Fin de Info de Hilillos**\n");
 
         }
 
@@ -388,6 +385,7 @@ namespace Proyecto_Arqui
             }
 
             Console.ReadKey();
+            p.infoFinSimulacion();
         }
 
         /*Instrucciones----------------------------------------------------------*/
@@ -529,7 +527,7 @@ namespace Proyecto_Arqui
                     mat_contextos[hilillo_actual - 1, i] = registros[i];
                 }
                 mat_contextos[hilillo_actual - 1, 32] = PC;
-                mat_contextos[hilillo_actual - 1, 35] += long.Parse(GetTimestamp(DateTime.Now));
+                mat_contextos[hilillo_actual - 1, 35] += Int32.Parse(DateTime.Now.ToString("ddHHmmfff"));
                 //escoger hilillo de nuevo
                 escogerHililloNuevo();
                 Console.Write("\n**Se ha realizado un cambio de contexto\n");
@@ -559,7 +557,7 @@ namespace Proyecto_Arqui
                         {
                             hilillos_tomados.Remove(hilillo_actual);
                             hilillos_tomados.Add(indiceATomar + 1);  //poner numero de hilillo, correspondiente con el PC
-                            mat_contextos[hilillo_actual - 1, 35] -= Int32.Parse(GetTimestamp(DateTime.Now));
+                            mat_contextos[hilillo_actual - 1, 35] -= Int32.Parse(DateTime.Now.ToString("ddHHmmfff"));
                             hilillo_actual = indiceATomar + 1;
                             PC = (int)mat_contextos[indiceATomar, 32];
                             Console.WriteLine(System.Threading.Thread.CurrentThread.Name + " tomo el hilillo " + (indiceATomar + 1));
