@@ -830,8 +830,8 @@ namespace Proyecto_Arqui
             }
             else if (cantidad == 2)
             {
+                nucleo1.Start();
                 nucleo2.Start();
-                nucleo3.Start();
             }
             else
             {
@@ -875,14 +875,3 @@ namespace Proyecto_Arqui
         }
     }
 }
-
-/*links
- http://stackoverflow.com/questions/4190949/create-multiple-threads-and-wait-all-of-them-to-complete
- https://www.dotnetperls.com/interlocked
- https://msdn.microsoft.com/en-us/library/system.threading.interlocked.aspx
- http://stackoverflow.com/questions/6029804/how-does-lock-work-exactly
- http://stackoverflow.com/questions/24975239/barrier-class-c-sharp
- https://msdn.microsoft.com/en-us/library/dd537615(v=vs.110).aspx
- http://geekswithblogs.net/jolson/archive/2009/02/09/an-intro-to-barrier.aspx
- http://www.codeproject.com/Articles/667298/Using-ThreadStaticAttribute
-*/
