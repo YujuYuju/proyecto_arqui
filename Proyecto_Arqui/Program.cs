@@ -295,7 +295,6 @@ namespace Proyecto_Arqui
             {
                 Console.WriteLine("Registro["+i+"]="+registros[i]);
             }
-
             barreraCicloReloj.RemoveParticipant();
         }
 
@@ -331,25 +330,31 @@ namespace Proyecto_Arqui
         }
 
 
-        public static void infoFinSimulacion()
+        public void infoFinSimulacion()
         {
             Console.WriteLine("\n**Fin de la Simulacion**\n\nLe memoria compartida quedo asi:\n");
             PrintVector(mem_principal_datos);
-            Console.WriteLine("\nPara cada hilillo que corrio:\n");
-
+            Console.WriteLine("\nPara cada hilillo que corrio:");
             for (int i = 0; i < mat_contextos.GetLength(0); i++)
             {
-                Console.Write("\n Registros: ");
+
+                Console.Write("\n-Registros: ");
                 for (int j = 0; j < 32; j++)
                 {
-                    Console.Write(" " + mat_contextos[i, j]);
+                    Console.Write(" R["+j+"]= " + mat_contextos[i, j]);
                 }
-                Console.Write("\nEl RL es: " + mat_contextos[i, 33]);
-                Console.WriteLine("\nEste hilillo tardo " + mat_contextos[i, 35] + " ciclos en ejecutarse");
+                Console.Write("\n-El RL es: " + mat_contextos[i, 33]);
+                Console.WriteLine("\n-Este hilillo tardo: " + mat_contextos[i, 35] + " ciclos en ejecutarse");
                 Console.WriteLine("\n****Fin de Hilillo****\n");                            
         }
             Console.WriteLine("\n**Fin de Info de Hilillos**\n");
-
+            Console.WriteLine("\nPara cada nucleo las caches quedaron asi:");
+            Console.WriteLine("\n**Cache Nucleo 1**\n");
+            PrintMatriz(cache_datos_1);
+            Console.WriteLine("\n**Cache Nucleo 2**\n");
+            PrintMatriz(cache_datos_2);
+            Console.WriteLine("\n**Cache Nucleo 3**\n");
+            PrintMatriz(cache_datos_3);
         }
 
 
@@ -845,6 +850,8 @@ namespace Proyecto_Arqui
                 Console.Write(hilillos_tomados[i] + " ");
             }
 
+            Console.ReadKey();
+            p.infoFinSimulacion();
             Console.ReadKey();
         }
 
