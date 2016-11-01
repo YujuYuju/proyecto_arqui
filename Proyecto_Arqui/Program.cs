@@ -16,7 +16,6 @@ namespace Proyecto_Arqui
         static int[,] cache_datos_2;            //matriz de cache de datos 2
         static int[,] cache_datos_3;            //matriz de cache de datos 3 
         static bool lento;
-        private static bool leer_instruccion_bool;
 
         //VARIABLE LOCALES-locales a cada thread
         [ThreadStatic]
@@ -29,9 +28,6 @@ namespace Proyecto_Arqui
         static int PC;               //la siguiente instruccion a ejecutar
         [ThreadStatic]
         static int hilillo_actual;	//cual hilillo se esta ejecutando en un nucleo dado
-
-        [ThreadStatic]
-        private static bool finished;
 
         static List<int> hilillos_tomados;
         int ultimo_mem_inst;            //'puntero' a ultimo lleno en memoria de instrucciones
@@ -123,13 +119,13 @@ namespace Proyecto_Arqui
             {
                 mem_principal_instruc[ultimo_mem_inst++] = Int32.Parse(s);
             }
-            mat_contextos[i - 1, 32] = ultimo_viejo+384;   //el PC
+            mat_contextos[i, 32] = ultimo_viejo+384;   //el PC
 
         }
         public void leer_muchos_hilillos()//permite cargar todos los hilillos desde el txt a memoria
         {
             mat_contextos = new long[cant_hilillos, 36];
-            for (int i = 1; i <= cant_hilillos; i++)
+            for (int i = 0; i < cant_hilillos; i++)
             {
                 leer_hilillo_txt(i);
             }
@@ -213,13 +209,16 @@ namespace Proyecto_Arqui
                             accesoInstrucciones = true;
                             //subir bloque a caché
                             int acum = 0;
-                            for (int i = 0; i < 4; i++)
+                            for (int ins=0; ins < 4; ins++)
                             {
-                                for (int j = 0; j < 4; j++, acum++)
+                                for (int palabr=0; palabr<4; palabr++, acum++)
                                 {
-                                    cache_instruc[i, j + bloque_a_cache(bloque) * 4] = mem_principal_instruc[PC-384 + acum];
+                                    cache_instruc[ins, palabr + bloque_a_cache(bloque) * 4]=mem_principal_instruc[bloque*16+acum];
+
                                 }
                             }
+
+
                             //onsole.WriteLine("memoria principal");
                             //PrintVector(mem_principal_instruc);
                             //int tem = bloque_a_cache(bloque);
@@ -480,7 +479,6 @@ namespace Proyecto_Arqui
         private static void fin_instruccion(int[] instru)
         {
             mat_contextos[hilillo_actual - 1, 34] = 1;
-            finished = true;
             barreraCicloReloj.SignalAndWait();
             quantum++;
         }
