@@ -127,7 +127,7 @@ namespace Proyecto_Arqui
         }
         public void leer_muchos_hilillos()//permite cargar todos los hilillos desde el txt a memoria
         {
-            mat_contextos = new long[cant_hilillos, 36];
+            mat_contextos = new long[cant_hilillos, 35];
             for (int i = 0; i < cant_hilillos; i++)
             {
                 leer_hilillo_txt(i);
@@ -137,7 +137,7 @@ namespace Proyecto_Arqui
 
             for (int i = 0; i < cant_hilillos; i++)
             {
-                for (int j = 0; j < 36; j++)
+                for (int j = 0; j < 35; j++)
                 {
                     if (j != 32)
                     {
@@ -160,11 +160,11 @@ namespace Proyecto_Arqui
                     {
                         for (int i = 0; i < cant_hilillos && hilillo_escogido == false; i++)
                         {
-                            if (mat_contextos[i, 34] != 1)
+                            if (mat_contextos[i, 33] != 1)
                             {
                                 if (!hilillos_tomados.Contains(i + 1))
                                 {
-                                    mat_contextos[i, 35] -= long.Parse(GetTimestamp(DateTime.Now));
+                                    mat_contextos[i, 34] -= long.Parse(GetTimestamp(DateTime.Now));
                                     hilillos_tomados.Add(i + 1);  //poner numero de hilillo, correspondiente con el PC
                                     hilillo_actual = i + 1;
                                     PC = (int)mat_contextos[i, 32];
@@ -281,13 +281,13 @@ namespace Proyecto_Arqui
                     }
                 }
             }
-            registros = new int[34];
+            registros = new int[33];
             quantum = 0;
             PC = 0;
 
             //PROCESO DEL NUCLEO---------------------------------------------------------------------------------------------------
             escogerHilillo();
-            while (mat_contextos[hilillo_actual - 1, 34] != 1)
+            while (mat_contextos[hilillo_actual - 1, 33] != 1)
             {
                 Console.WriteLine(System.Threading.Thread.CurrentThread.Name +
                                   " tiene que ejecutar la instruccion en direccion " + PC);
@@ -366,7 +366,7 @@ namespace Proyecto_Arqui
 
 
                 
-                Console.WriteLine("\nEste hilillo tardo " + mat_contextos[i, 35] + " ciclos en ejecutarse");
+                Console.WriteLine("\nEste hilillo tardo " + mat_contextos[i, 34] + " ciclos en ejecutarse");
                 Console.WriteLine("\n****Fin de Hilillo****\n");                            
         }
             Console.WriteLine("\n**Fin de Hilillo**\n");
@@ -502,7 +502,7 @@ namespace Proyecto_Arqui
         }
         private static void fin_instruccion(int[] instru)
         {
-            mat_contextos[hilillo_actual - 1, 34] = 1;
+            mat_contextos[hilillo_actual - 1, 33] = 1;
             barreraCicloReloj.SignalAndWait();
             quantum++;
         }
@@ -887,49 +887,140 @@ namespace Proyecto_Arqui
         }
         private static void logica_sc(int direccionDondeSeGuarda) {
             // Se pone -1 en otras RL's, SI RL ES IGUAL A n+R[Y]
-
+            string hiloActual = System.Threading.Thread.CurrentThread.Name;
+            switch (hiloActual)
+            {
+                case "Nucleo1":
+                    //poner RL_2 y RL_3 en -1
+                    bool locksObtenidos = false;
+                    while (locksObtenidos == false)
+                    {
+                        if (Monitor.TryEnter(RL_2))
+                        {
+                            try
+                            {
+                                if (Monitor.TryEnter(RL_3))
+                                {
+                                    try
+                                    {
+                                        RL_2 = -1;
+                                        RL_3 = -1;
+                                    }
+                                    finally
+                                    {
+                                        Monitor.Exit(RL_3);
+                                    }
+                                }
+                            }
+                            finally
+                            {
+                                Monitor.Exit(RL_2);
+                            }
+                        }
+                    }
+                    break;
+                case "Nucleo2":
+                    //poner RL_1 y RL_3 en -1
+                    bool locksObtenidos1 = false;
+                    while (locksObtenidos1 == false)
+                    {
+                        if (Monitor.TryEnter(RL_1))
+                        {
+                            try
+                            {
+                                if (Monitor.TryEnter(RL_3))
+                                {
+                                    try
+                                    {
+                                        RL_1 = -1;
+                                        RL_3 = -1;
+                                    }
+                                    finally
+                                    {
+                                        Monitor.Exit(RL_3);
+                                    }
+                                }
+                            }
+                            finally
+                            {
+                                Monitor.Exit(RL_1);
+                            }
+                        }
+                    }
+                    break;
+                case "Nucleo3":
+                    //poner RL_2 y RL_1 en -1
+                    bool locksObtenidos2 = false;
+                    while (locksObtenidos2 == false)
+                    {
+                        if (Monitor.TryEnter(RL_1))
+                        {
+                            try
+                            {
+                                if (Monitor.TryEnter(RL_2))
+                                {
+                                    try
+                                    {
+                                        RL_1 = -1;
+                                        RL_2 = -1;
+                                    }
+                                    finally
+                                    {
+                                        Monitor.Exit(RL_2);
+                                    }
+                                }
+                            }
+                            finally
+                            {
+                                Monitor.Exit(RL_1);
+                            }
+                        }
+                    }
+                    break;
+            }
 
         }
         //COSAS POR HACER: corregir cuando hay más hilillos que Nucleos, cambiar vector de registros-sin RL
-        //Implementar logica_sc
 
 
         /*--------------------------------------------------------------------*/
         private static void revisarSiCambioContexto()
         {
-            if (quantum == quantum_total || mat_contextos[hilillo_actual - 1, 34] == 1)
+            if (quantum == quantum_total || mat_contextos[hilillo_actual - 1, 33] == 1)
             {
                 string hiloActual = System.Threading.Thread.CurrentThread.Name;
                 switch (hiloActual)
                 {
                     case "Nucleo1":
-                        bool obtenidoLock = false;
-                        while (obtenidoLock == false)
+                        int obtenido = 0;
+                        while (obtenido == 0)
                         {
                             if (Monitor.TryEnter(RL_1))
                             {
                                 try
                                 {
                                     RL_1 = -1;
-                                    obtenidoLock = true;
+                                    obtenido = true;//COMENTARIO GRANDOTE ALGO MALO CON EL LOCK
+                                    
                                 }
                                 finally
                                 {
                                     Monitor.Exit(RL_1);
                                 }
                             }
+                            Interlocked.Add(ref obtenido, 1);
                         }
                         break;
                     case "Nucleo2":
-                        bool obtenidoLock1 = false;
-                        while (obtenidoLock1 == false)
+                        int obtenido1 = 0;
+                        while (obtenido1 == 0)
                         {
                             if (Monitor.TryEnter(RL_2))
                             {
                                 try
                                 {
                                     RL_2 = -1;
-                                    obtenidoLock1 = true;
+                                    Interlocked.Add(ref obtenido1, 1);
                                 }
                                 finally
                                 {
@@ -939,15 +1030,15 @@ namespace Proyecto_Arqui
                         }
                         break;
                     case "Nucleo3":
-                        bool obtenidoLock2 = false;
-                        while (obtenidoLock2 == false)
+                        int obtenido2 = 0;
+                        while (obtenido2 == 0)
                         {
                             if (Monitor.TryEnter(RL_3))
                             {
                                 try
                                 {
                                     RL_3 = -1;
-                                    obtenidoLock2 = true;
+                                    Interlocked.Add(ref obtenido2, 1);
                                 }
                                 finally
                                 {
@@ -965,7 +1056,7 @@ namespace Proyecto_Arqui
                     mat_contextos[hilillo_actual - 1, i] = registros[i];
                 }
                 mat_contextos[hilillo_actual - 1, 32] = PC;
-                mat_contextos[hilillo_actual - 1, 35] += long.Parse(GetTimestamp(DateTime.Now));
+                mat_contextos[hilillo_actual - 1, 34] += long.Parse(GetTimestamp(DateTime.Now));
                 //escoger hilillo de nuevo
                 escogerHililloNuevo();
                 Console.Write("\n**Se ha realizado un cambio de contexto\n");
@@ -981,7 +1072,7 @@ namespace Proyecto_Arqui
                 hilillo_nuevo_escogido = true;
                 for (int i = 0; i < mat_contextos.GetLength(0); i++)
                 {
-                    if (mat_contextos[i, 34] != 1 && !hilillos_tomados.Contains(i + 1))
+                    if (mat_contextos[i, 33] != 1 && !hilillos_tomados.Contains(i + 1))
                     {
                         indiceATomar = i;
                         break;
@@ -989,13 +1080,13 @@ namespace Proyecto_Arqui
                 }
                 if (indiceATomar != -1)
                 {
-                    if (Monitor.TryEnter(mat_contextos))
+                    if (Monitor.TryEnter(mat_contextos))//PONER ADENTRO DE UN WHILE
                     {
                         try
                         {
                             hilillos_tomados.Remove(hilillo_actual);
                             hilillos_tomados.Add(indiceATomar + 1);  //poner numero de hilillo, correspondiente con el PC
-                            mat_contextos[hilillo_actual - 1, 35] -= Int32.Parse(GetTimestamp(DateTime.Now));
+                            mat_contextos[hilillo_actual - 1, 34] -= Int32.Parse(GetTimestamp(DateTime.Now));
                             hilillo_actual = indiceATomar + 1;
                             PC = (int)mat_contextos[indiceATomar, 32];
                             Console.WriteLine(System.Threading.Thread.CurrentThread.Name + " tomo el hilillo " + (indiceATomar + 1));
