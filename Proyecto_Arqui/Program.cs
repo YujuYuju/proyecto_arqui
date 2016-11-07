@@ -151,6 +151,7 @@ namespace Proyecto_Arqui
         /*Hilos----------------------------------------------------------*/
         static void escogerHilillo()
         {
+
             bool hilillo_escogido = false;
             while (hilillo_escogido == false)
             {
@@ -259,7 +260,7 @@ namespace Proyecto_Arqui
             PC += 4;
             reDireccionarInstruccion(instruccion);
             quantum++;
-            Console.WriteLine("Quatum del nucleo: " + quantum);            
+            //Console.WriteLine("Quatum del nucleo: " + quantum);            
         }
 
 
@@ -289,8 +290,7 @@ namespace Proyecto_Arqui
             escogerHilillo();
             while (mat_contextos[hilillo_actual - 1, 33] != 1)
             {
-                Console.WriteLine(System.Threading.Thread.CurrentThread.Name +
-                                  " tiene que ejecutar la instruccion en direccion " + PC);
+                //Console.WriteLine(System.Threading.Thread.CurrentThread.Name + " tiene que ejecutar la instruccion en direccion " + PC);
                 leerInstruccion();
                 revisarSiCambioContexto();
                 if (lento)
@@ -520,17 +520,17 @@ namespace Proyecto_Arqui
             switch (hiloActual)
             {
                 case "Nucleo1":
-                    lw_nucleo(direccionDelDato, X, ref cache_datos_1, false, hiloActual);
+                    lw_nucleo(direccionDelDato, X, ref cache_datos_1, false);
                     break;
                 case "Nucleo2":
-                    lw_nucleo(direccionDelDato, X, ref cache_datos_2, false, hiloActual);
+                    lw_nucleo(direccionDelDato, X, ref cache_datos_2, false);
                     break;
                 case "Nucleo3":
-                    lw_nucleo(direccionDelDato, X, ref cache_datos_3, false, hiloActual);
+                    lw_nucleo(direccionDelDato, X, ref cache_datos_3, false);
                     break;
             }
         }
-        private static void lw_nucleo(int direccionDelDato, int X, ref int[,] cache, bool esLoadLink, string hiloActual)
+        private static void lw_nucleo(int direccionDelDato, int X, ref int[,] cache, bool esLoadLink)
         {
             int bloqueDelDato = dir_a_bloque(direccionDelDato);
             int palabraDelDato = dir_a_palabra(direccionDelDato);
@@ -566,7 +566,7 @@ namespace Proyecto_Arqui
                                 try
                                 {
                                     //Logica Instruccion-----------------------------------------
-                                    logica_lw(ref cache, bloqueDelDato, palabraDelDato, X, direccionDelDato, esLoadLink, hiloActual);
+                                    logica_lw(ref cache, bloqueDelDato, palabraDelDato, X, direccionDelDato, esLoadLink);
                                     accesoDeCacheLocal = true;
                                     pasoLockDeAdentro = true;
                                 }
@@ -594,7 +594,8 @@ namespace Proyecto_Arqui
                 }
             }
         }
-        private static void logica_lw(ref int[,] cache, int bloqueDelDato, int palabraDelDato, int X, int direccionDelDato, bool esLoadLink, string hiloActual)
+
+        private static void logica_lw(ref int[,] cache, int bloqueDelDato, int palabraDelDato, int X, int direccionDelDato, bool esLoadLink)
         {
             //subir bloque a caché
             for (int i = 0; i < 4; i++)
@@ -610,64 +611,50 @@ namespace Proyecto_Arqui
             registros[X] = contenidoDeMem;
             if (esLoadLink)
             {
+                string hiloActual = System.Threading.Thread.CurrentThread.Name;
                 switch (hiloActual)
                 {
                     case "Nucleo1":
-                        bool obtenidoLock = false;
-                        while (obtenidoLock == false)
+                        //RL = n + R[Y]
+                        bool done = false;
+                        object locker = new object();
+                        lock (locker)
                         {
-                            if (Monitor.TryEnter(RL_1))
+                            while (!done)
                             {
-                                try
-                                {
-                                    RL_1 = direccionDelDato;
-                                    obtenidoLock = true;
-                                }
-                                finally
-                                {
-                                    Monitor.Exit(RL_1);
-                                }
+                                RL_1 = direccionDelDato;
+                                done = true;
                             }
                         }
                         break;
                     case "Nucleo2":
-                        bool obtenidoLock1 = false;
-                        while (obtenidoLock1 == false)
+                        //RL = n + R[Y]
+                        bool done1 = false;
+                        object locker1 = new object();
+                        lock (locker1)
                         {
-                            if (Monitor.TryEnter(RL_2))
+                            while (!done1)
                             {
-                                try
-                                {
-                                    RL_2 = direccionDelDato;
-                                    obtenidoLock1 = true;
-                                }
-                                finally
-                                {
-                                    Monitor.Exit(RL_2);
-                                }
+                                RL_2 = direccionDelDato;
+                                done1 = true;
                             }
                         }
                         break;
                     case "Nucleo3":
-                        bool obtenidoLock2 = false;
-                        while (obtenidoLock2 == false)
+                        //RL = n + R[Y]
+                        bool done2 = false;
+                        object locker2 = new object();
+                        lock (locker2)
                         {
-                            if (Monitor.TryEnter(RL_3))
+                            while (!done2)
                             {
-                                try
-                                {
-                                    RL_3 = direccionDelDato;
-                                    obtenidoLock2 = true;
-                                }
-                                finally
-                                {
-                                    Monitor.Exit(RL_3);
-                                }
+                                RL_3 = direccionDelDato;
+                                done2 = true;
                             }
                         }
                         break;
                 }
-                //RL = n + R[Y]
+                
             }
         }
 
@@ -685,13 +672,13 @@ namespace Proyecto_Arqui
             switch (hiloActual)
             {
                 case "Nucleo1":
-                    lw_nucleo(direccionDelDato, X, ref cache_datos_1, true, hiloActual);
+                    lw_nucleo(direccionDelDato, X, ref cache_datos_1, true);
                     break;
                 case "Nucleo2":
-                    lw_nucleo(direccionDelDato, X, ref cache_datos_2, true, hiloActual);
+                    lw_nucleo(direccionDelDato, X, ref cache_datos_2, true);
                     break;
                 case "Nucleo3":
-                    lw_nucleo(direccionDelDato, X, ref cache_datos_3, true, hiloActual);
+                    lw_nucleo(direccionDelDato, X, ref cache_datos_3, true);
                     break;
             }
         }
@@ -838,7 +825,6 @@ namespace Proyecto_Arqui
             }
         }
 
-        
         private static void sc_instruccion(int[] instru)
         {
             int X = instru[2];
@@ -885,6 +871,7 @@ namespace Proyecto_Arqui
                     break;
             }
         }
+        //ESTE MODIFICA RL
         private static void logica_sc(int direccionDondeSeGuarda) {
             // Se pone -1 en otras RL's, SI RL ES IGUAL A n+R[Y]
             string hiloActual = System.Threading.Thread.CurrentThread.Name;
@@ -892,95 +879,49 @@ namespace Proyecto_Arqui
             {
                 case "Nucleo1":
                     //poner RL_2 y RL_3 en -1
-                    bool locksObtenidos = false;
-                    while (locksObtenidos == false)
+                    bool done = false;
+                    object locker = new object();
+                    lock (locker)
                     {
-                        if (Monitor.TryEnter(RL_2))
+                        while (!done)
                         {
-                            try
-                            {
-                                if (Monitor.TryEnter(RL_3))
-                                {
-                                    try
-                                    {
-                                        RL_2 = -1;
-                                        RL_3 = -1;
-                                    }
-                                    finally
-                                    {
-                                        Monitor.Exit(RL_3);
-                                    }
-                                }
-                            }
-                            finally
-                            {
-                                Monitor.Exit(RL_2);
-                            }
+                            RL_2 = -1;
+                            RL_3 = -1;
+                            done = true;
                         }
                     }
                     break;
                 case "Nucleo2":
                     //poner RL_1 y RL_3 en -1
-                    bool locksObtenidos1 = false;
-                    while (locksObtenidos1 == false)
+                    bool done1 = false;
+                    object locker1 = new object();
+                    lock (locker1)
                     {
-                        if (Monitor.TryEnter(RL_1))
+                        while (!done1)
                         {
-                            try
-                            {
-                                if (Monitor.TryEnter(RL_3))
-                                {
-                                    try
-                                    {
-                                        RL_1 = -1;
-                                        RL_3 = -1;
-                                    }
-                                    finally
-                                    {
-                                        Monitor.Exit(RL_3);
-                                    }
-                                }
-                            }
-                            finally
-                            {
-                                Monitor.Exit(RL_1);
-                            }
+                            RL_1 = -1;
+                            RL_3 = -1;
+                            done1 = true;
                         }
                     }
                     break;
                 case "Nucleo3":
                     //poner RL_2 y RL_1 en -1
-                    bool locksObtenidos2 = false;
-                    while (locksObtenidos2 == false)
+                    bool done2 = false;
+                    object locker2 = new object();
+                    lock (locker2)
                     {
-                        if (Monitor.TryEnter(RL_1))
+                        while (!done2)
                         {
-                            try
-                            {
-                                if (Monitor.TryEnter(RL_2))
-                                {
-                                    try
-                                    {
-                                        RL_1 = -1;
-                                        RL_2 = -1;
-                                    }
-                                    finally
-                                    {
-                                        Monitor.Exit(RL_2);
-                                    }
-                                }
-                            }
-                            finally
-                            {
-                                Monitor.Exit(RL_1);
-                            }
+                            RL_1 = -1;
+                            RL_2 = -1;
+                            done2 = true;
                         }
                     }
                     break;
             }
 
         }
-        //COSAS POR HACER: corregir cuando hay más hilillos que Nucleos, cambiar vector de registros-sin RL
 
 
         /*--------------------------------------------------------------------*/
@@ -992,58 +933,41 @@ namespace Proyecto_Arqui
                 switch (hiloActual)
                 {
                     case "Nucleo1":
-                        int obtenido = 0;
-                        while (obtenido == 0)
+                        //RL = n + R[Y]
+                        bool done = false;
+                        object locker = new object();
+                        lock (locker)
                         {
-                            if (Monitor.TryEnter(RL_1))
+                            while (!done)
                             {
-                                try
-                                {
-                                    RL_1 = -1;
-                                    obtenido = true;//COMENTARIO GRANDOTE ALGO MALO CON EL LOCK
-                                    
-                                }
-                                finally
-                                {
-                                    Monitor.Exit(RL_1);
-                                }
+                                RL_1 = -1;
+                                done = true;
                             }
-                            Interlocked.Add(ref obtenido, 1);
                         }
                         break;
                     case "Nucleo2":
-                        int obtenido1 = 0;
-                        while (obtenido1 == 0)
+                        //RL = n + R[Y]
+                        bool done1 = false;
+                        object locker1 = new object();
+                        lock (locker1)
                         {
-                            if (Monitor.TryEnter(RL_2))
+                            while (!done1)
                             {
-                                try
-                                {
-                                    RL_2 = -1;
-                                    Interlocked.Add(ref obtenido1, 1);
-                                }
-                                finally
-                                {
-                                    Monitor.Exit(RL_2);
-                                }
+                                RL_2 = -1;
+                                done1 = true;
                             }
                         }
                         break;
                     case "Nucleo3":
-                        int obtenido2 = 0;
-                        while (obtenido2 == 0)
+                        //RL = n + R[Y]
+                        bool done2 = false;
+                        object locker2 = new object();
+                        lock (locker2)
                         {
-                            if (Monitor.TryEnter(RL_3))
+                            while (!done2)
                             {
-                                try
-                                {
-                                    RL_3 = -1;
-                                    Interlocked.Add(ref obtenido2, 1);
-                                }
-                                finally
-                                {
-                                    Monitor.Exit(RL_3);
-                                }
+                                RL_3 = -1;
+                                done2 = true;
                             }
                         }
                         break;
@@ -1080,13 +1004,13 @@ namespace Proyecto_Arqui
                 }
                 if (indiceATomar != -1)
                 {
-                    if (Monitor.TryEnter(mat_contextos))//PONER ADENTRO DE UN WHILE
+                    if (Monitor.TryEnter(mat_contextos))
                     {
                         try
                         {
                             hilillos_tomados.Remove(hilillo_actual);
                             hilillos_tomados.Add(indiceATomar + 1);  //poner numero de hilillo, correspondiente con el PC
-                            mat_contextos[hilillo_actual - 1, 34] -= Int32.Parse(GetTimestamp(DateTime.Now));
+                            //mat_contextos[hilillo_actual - 1, 34] -= Int32.Parse(GetTimestamp(DateTime.Now));
                             hilillo_actual = indiceATomar + 1;
                             PC = (int)mat_contextos[indiceATomar, 32];
                             Console.WriteLine(System.Threading.Thread.CurrentThread.Name + " tomo el hilillo " + (indiceATomar + 1));
