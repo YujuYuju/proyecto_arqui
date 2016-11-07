@@ -295,16 +295,20 @@ namespace Proyecto_Arqui
                 revisarSiCambioContexto();
                 if (lento)
                     Console.ReadKey();
+               
             }
-            Console.WriteLine(System.Threading.Thread.CurrentThread.Name +"paro");
-            for(int i=0; i<32;i++)
-            {
-                Console.WriteLine("Registro["+i+"]="+registros[i]);
-            }
-
             barreraCicloReloj.RemoveParticipant();
         }
 
+
+        private static void finHilillo()
+        {
+            Console.WriteLine("Hilillo "+hilillo_actual + " paró");
+            for (int i = 0; i < 32; i++)
+            {
+                Console.WriteLine("Registro[" + i + "]=" + registros[i]);
+            }          
+        }
 
 
         /*-----------------------------------------------------------------------*/
@@ -929,6 +933,8 @@ namespace Proyecto_Arqui
         {
             if (quantum == quantum_total || mat_contextos[hilillo_actual - 1, 33] == 1)
             {
+                if (mat_contextos[hilillo_actual - 1, 33] == 1)
+                    finHilillo();
                 string hiloActual = System.Threading.Thread.CurrentThread.Name;
                 switch (hiloActual)
                 {
