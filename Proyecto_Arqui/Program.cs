@@ -58,7 +58,7 @@ namespace Proyecto_Arqui
         /*Inicio del programa-----------------------------------------------*/
         public Program() //constructor, se inicializan las variables
         {
-            mem_principal_datos = new int[384];
+            mem_principal_datos = new int[96];
             for (int i = 0; i < mem_principal_datos.Length; i++)
             {
                 mem_principal_datos[i] = 1;
@@ -511,6 +511,10 @@ namespace Proyecto_Arqui
             quantum++;
         }
 
+
+
+
+        /*LOAD-----------------------------------------------------------------------------------------------------------------*/
         private static void lw_instruccion(int[] instru)
         {
             int X = instru[2];
@@ -534,10 +538,35 @@ namespace Proyecto_Arqui
                     break;
             }
         }
+        private static void ll_instruccion(int[] instru)
+        {
+            int X = instru[2];
+            int Y = instru[1];
+            int n = instru[3];
+
+            //Llamar proceso que hace todos los LOCKs, en la caché correspondiente
+            int direccionDelDato = registros[Y] + n;
+
+            string hiloActual = System.Threading.Thread.CurrentThread.Name;
+            switch (hiloActual)
+            {
+                case "Nucleo1":
+                    lw_nucleo(direccionDelDato, X, ref cache_datos_1, true, ref RL_1);
+                    break;
+                case "Nucleo2":
+                    lw_nucleo(direccionDelDato, X, ref cache_datos_2, true, ref RL_2);
+                    break;
+                case "Nucleo3":
+                    lw_nucleo(direccionDelDato, X, ref cache_datos_3, true, ref RL_3);
+                    break;
+            }
+        }
+
+
         private static void lw_nucleo(int direccionDelDato, int X, ref int[,] cache, bool esLoadLink, ref int RL_propio)
         {
-            int bloqueDelDato = dir_a_bloque(direccionDelDato);
-            int palabraDelDato = dir_a_palabra(direccionDelDato);
+            int bloqueDelDato = direccionDelDato/4;
+            int palabraDelDato = direccionDelDato % (4) / 4;
 
 
             if (cache[4, bloque_a_cache(bloqueDelDato)] == bloqueDelDato && cache[5, bloque_a_cache(bloqueDelDato)] != 1)
@@ -602,47 +631,28 @@ namespace Proyecto_Arqui
                 }
             }
         }
-
         private static void logica_lw(ref int[,] cache, int bloqueDelDato, int palabraDelDato, int X, int direccionDelDato, bool esLoadLink, ref int RL_propio)
         {
             //subir bloque a caché
-            for (int i = 0; i < 4; i++)
+            int acum = 0;
+            int direccion = 0;
+            for (int ins = 0; ins < 4; ins++, acum++)
             {
-                cache[i, bloque_a_cache(bloqueDelDato)] = mem_principal_datos[direccionDelDato / 4];
+                cache[ins, bloque_a_cache(direccionDelDato / 16)] = mem_principal_datos[direccionDelDato/4+acum];
             }
-            cache[4, bloque_a_cache(bloqueDelDato)] = bloqueDelDato;
+
+            cache[4, bloque_a_cache(direccionDelDato / 16)] = direccionDelDato / 16;
+            cache[5, bloque_a_cache(direccionDelDato / 16)] = 0;
 
             //Imprimir caché de datos
             PrintMatriz(cache);
 
-            int contenidoDeMem = cache[palabraDelDato, bloque_a_cache(bloqueDelDato)];
+            int contenidoDeMem = cache[palabraDelDato, bloque_a_cache(direccionDelDato / 16)];
             registros[X] = contenidoDeMem;
         }
-        private static void ll_instruccion(int[] instru)
-        {
-            int X = instru[2];
-            int Y = instru[1];
-            int n = instru[3];
+        
 
-            //Llamar proceso que hace todos los LOCKs, en la caché correspondiente
-            int direccionDelDato = registros[Y] + n;
-
-            string hiloActual = System.Threading.Thread.CurrentThread.Name;
-            switch (hiloActual)
-            {
-                case "Nucleo1":
-                    lw_nucleo(direccionDelDato, X, ref cache_datos_1, true, ref RL_1);
-                    break;
-                case "Nucleo2":
-                    lw_nucleo(direccionDelDato, X, ref cache_datos_2, true, ref RL_2);
-                    break;
-                case "Nucleo3":
-                    lw_nucleo(direccionDelDato, X, ref cache_datos_3, true, ref RL_3);
-                    break;
-            }
-        }
-
-
+        /*STORE-----------------------------------------------------------------------------------------------------------------*/
         private static void sw_instruccion(int[] instru)
         {//Write Through y No Write Allocate
             int X = instru[2];
@@ -670,7 +680,7 @@ namespace Proyecto_Arqui
         {
             int bloqueDelDato = dir_a_bloque(direccionDondeSeGuarda);
             int j = 28;
-            if (cache_instruc[4, bloque_a_cache(bloqueDelDato) * 4] == bloqueDelDato)
+            if (cache[4, bloque_a_cache(bloqueDelDato)] == bloqueDelDato && cache[5, bloque_a_cache(bloqueDelDato)] != 1)
             {
                 j = 7;
             }
@@ -726,6 +736,9 @@ namespace Proyecto_Arqui
         }
     }
 
+
+
+
         private static void NewMethod(bool fue_fallo, int direccionDondeSeGuarda, int X, int[,] cache, int[,] primeraNoLocal, int[,] segundaNoLocal, ref int RL_ajena1, ref int RL_ajena2, ref bool algunoNOseObtuvo, ref bool accesoTodas)
         {
             if (Monitor.TryEnter(mem_principal_datos))
@@ -739,7 +752,7 @@ namespace Proyecto_Arqui
                         try
                         {
                             primeraNoLocal[5, bloque_a_cache(dir_a_bloque(direccionDondeSeGuarda))] = 1;//invalido
-                                                                                                        //cache3------------------------------------------------------------
+                            //cache3------------------------------------------------------------
                             RL_ajena2 = -1;
                             if (Monitor.TryEnter(segundaNoLocal))
                             {
@@ -754,7 +767,8 @@ namespace Proyecto_Arqui
                                     else
                                     {
                                         //se escribe en cache y en memoria
-                                        cache[dir_a_palabra(direccionDondeSeGuarda), bloque_a_cache(dir_a_bloque(direccionDondeSeGuarda))] = registros[X];
+                                        cache[dir_a_palabra(direccionDondeSeGuarda), bloque_a_cache(direccionDondeSeGuarda / 16)] = registros[X];
+                                        //cache[dir_a_palabra(direccionDondeSeGuarda), bloque_a_cache(dir_a_bloque(direccionDondeSeGuarda))] = registros[X];
                                         mem_principal_datos[direccionDondeSeGuarda / 4] = registros[X];
                                     }
                                     segundaNoLocal[5, bloque_a_cache(dir_a_bloque(direccionDondeSeGuarda))] = 1;//invalido]
@@ -790,6 +804,12 @@ namespace Proyecto_Arqui
                 algunoNOseObtuvo = true;
             }
         }
+
+
+
+
+
+
 
         /*--------------------------------------------------------------------*/
         private static void revisarSiCambioContexto()
@@ -855,121 +875,121 @@ namespace Proyecto_Arqui
             // PrintMatriz(mat_contextos);
         }
     }
-    static void escogerHililloNuevo()
-    {
-        bool hilillo_nuevo_escogido = false;
-        while (hilillo_nuevo_escogido == false)
+        static void escogerHililloNuevo()
         {
-            int indiceATomar = -1;
-            hilillo_nuevo_escogido = true;
-            for (int i = 0; i < mat_contextos.GetLength(0); i++)
+            bool hilillo_nuevo_escogido = false;
+            while (hilillo_nuevo_escogido == false)
             {
-                if (mat_contextos[i, 33] != 1 && !hilillos_tomados.Contains(i + 1))
+                int indiceATomar = -1;
+                hilillo_nuevo_escogido = true;
+                for (int i = 0; i < mat_contextos.GetLength(0); i++)
                 {
-                    indiceATomar = i;
-                    break;
-                }
-            }
-            if (indiceATomar != -1)
-            {
-                if (Monitor.TryEnter(mat_contextos))
-                {
-                    try
+                    if (mat_contextos[i, 33] != 1 && !hilillos_tomados.Contains(i + 1))
                     {
-                        hilillos_tomados.Remove(hilillo_actual);
-                        hilillos_tomados.Add(indiceATomar + 1);  //poner numero de hilillo, correspondiente con el PC
-                                                                 //mat_contextos[hilillo_actual - 1, 34] -= Int32.Parse(GetTimestamp(DateTime.Now));
-                        hilillo_actual = indiceATomar + 1;
-                        PC = (int)mat_contextos[indiceATomar, 32];
-                        Console.WriteLine(System.Threading.Thread.CurrentThread.Name + " tomo el hilillo " + (indiceATomar + 1));
-                        for (int i = 0; i < 32; i++)
+                        indiceATomar = i;
+                        break;
+                    }
+                }
+                if (indiceATomar != -1)
+                {
+                    if (Monitor.TryEnter(mat_contextos))
+                    {
+                        try
                         {
-                            registros[i] = (int)mat_contextos[hilillo_actual - 1, i];
+                            hilillos_tomados.Remove(hilillo_actual);
+                            hilillos_tomados.Add(indiceATomar + 1);  //poner numero de hilillo, correspondiente con el PC
+                                                                     //mat_contextos[hilillo_actual - 1, 34] -= Int32.Parse(GetTimestamp(DateTime.Now));
+                            hilillo_actual = indiceATomar + 1;
+                            PC = (int)mat_contextos[indiceATomar, 32];
+                            Console.WriteLine(System.Threading.Thread.CurrentThread.Name + " tomo el hilillo " + (indiceATomar + 1));
+                            for (int i = 0; i < 32; i++)
+                            {
+                                registros[i] = (int)mat_contextos[hilillo_actual - 1, i];
+                            }
+                        }
+                        finally
+                        {
+                            Monitor.Exit(mat_contextos);
                         }
                     }
-                    finally
+                    else
                     {
-                        Monitor.Exit(mat_contextos);
+                        hilillo_nuevo_escogido = false;
                     }
-                }
-                else
-                {
-                    hilillo_nuevo_escogido = false;
                 }
             }
         }
-    }
 
 
 
 
-    /*-------------------------------------------------------------------*/
-    /*MAIN---------------------------------------------------------------*/
-    static void Main(string[] args)
-    {
-        Program p = new Program();
-        p.menu_usuario();
-        p.leer_muchos_hilillos();
-        modoDeEjejcucion();
-        int cantidad = cant_hilillos > 3 ? 3 : cant_hilillos;
-        barreraCicloReloj = new Barrier(cantidad,
-            b =>
+        /*-------------------------------------------------------------------*/
+        /*MAIN---------------------------------------------------------------*/
+        static void Main(string[] args)
+        {
+            Program p = new Program();
+            p.menu_usuario();
+            p.leer_muchos_hilillos();
+            modoDeEjejcucion();
+            int cantidad = cant_hilillos > 3 ? 3 : cant_hilillos;
+            barreraCicloReloj = new Barrier(cantidad,
+                b =>
+                {
+                        //Console.WriteLine("Todos han llegado.");
+                        ciclos_reloj++;
+                        //Console.WriteLine("Ciclos de reloj hasta ahora: {0}", ciclos_reloj);
+                    });
+            //crear nucleos
+            var nucleo1 = new Thread(new ThreadStart(procesoDelNucelo));
+            nucleo1.Name = String.Format("Nucleo{0}", 1);
+
+
+            var nucleo2 = new Thread(new ThreadStart(procesoDelNucelo));
+            nucleo2.Name = String.Format("Nucleo{0}", 2);
+
+            var nucleo3 = new Thread(new ThreadStart(procesoDelNucelo));
+            nucleo3.Name = String.Format("Nucleo{0}", 3);
+
+            if (cantidad == 1)
             {
-                    //Console.WriteLine("Todos han llegado.");
-                    ciclos_reloj++;
-                    //Console.WriteLine("Ciclos de reloj hasta ahora: {0}", ciclos_reloj);
-                });
-        //crear nucleos
-        var nucleo1 = new Thread(new ThreadStart(procesoDelNucelo));
-        nucleo1.Name = String.Format("Nucleo{0}", 1);
-
-
-        var nucleo2 = new Thread(new ThreadStart(procesoDelNucelo));
-        nucleo2.Name = String.Format("Nucleo{0}", 2);
-
-        var nucleo3 = new Thread(new ThreadStart(procesoDelNucelo));
-        nucleo3.Name = String.Format("Nucleo{0}", 3);
-
-        if (cantidad == 1)
-        {
-            nucleo1.Start();
-        }
-        else if (cantidad == 2)
-        {
-            nucleo1.Start();
-            nucleo2.Start();
-        }
-        else
-        {
-            nucleo1.Start();
-            nucleo2.Start();
-            nucleo3.Start();
-        }
-
-
-        Console.ReadKey();
-    }
-
-
-
-    private static void PrintMatriz(int[,] matriz)
-    {
-        for (int i = 0; i < matriz.GetLength(0); i++)
-        {
-            for (int j = 0; j < matriz.GetLength(1); j++)
+                nucleo1.Start();
+            }
+            else if (cantidad == 2)
             {
-                Console.Write(" " + matriz[i, j]);
+                nucleo1.Start();
+                nucleo2.Start();
+            }
+            else
+            {
+                nucleo1.Start();
+                nucleo2.Start();
+                nucleo3.Start();
+            }
+
+
+            Console.ReadKey();
+        }
+
+
+
+        private static void PrintMatriz(int[,] matriz)
+        {
+            for (int i = 0; i < matriz.GetLength(0); i++)
+            {
+                for (int j = 0; j < matriz.GetLength(1); j++)
+                {
+                    Console.Write(" " + matriz[i, j]);
+                }
+                Console.WriteLine("");
+            }
+        }
+        private static void PrintVector(int[] vector)
+        {
+            for (int i = 0; i < vector.GetLength(0); i++)
+            {
+                Console.Write(" " + vector[i]);
             }
             Console.WriteLine("");
         }
     }
-    private static void PrintVector(int[] vector)
-    {
-        for (int i = 0; i < vector.GetLength(0); i++)
-        {
-            Console.Write(" " + vector[i]);
-        }
-        Console.WriteLine("");
-    }
-}
 }
