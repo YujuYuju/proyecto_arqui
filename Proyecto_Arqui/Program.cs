@@ -424,7 +424,7 @@ namespace Proyecto_Arqui
                     ll_instruccion(instruc);
                     break;
                 case 51:
-                    sc_instruccion(instruc);
+                    sw_instruccion(instruc);
                     break;
             }
         }
@@ -540,7 +540,7 @@ namespace Proyecto_Arqui
             int palabraDelDato = dir_a_palabra(direccionDelDato);
 
 
-            if (cache[4, bloque_a_cache(bloqueDelDato)] == bloqueDelDato || cache[5, bloque_a_cache(bloqueDelDato)] == 1)
+            if (cache[4, bloque_a_cache(bloqueDelDato)] == bloqueDelDato && cache[5, bloque_a_cache(bloqueDelDato)] != 1)
             {
                 int contenidoDeMem = cache[palabraDelDato, bloque_a_cache(bloqueDelDato)];
                 registros[X] = contenidoDeMem;
@@ -570,6 +570,10 @@ namespace Proyecto_Arqui
                                 try
                                 {
                                     //Logica Instruccion-----------------------------------------
+                                    if (esLoadLink)
+                                    {
+                                        LL(direccionDelDato);
+                                    }
                                     logica_lw(ref cache, bloqueDelDato, palabraDelDato, X, direccionDelDato, esLoadLink);
                                     accesoDeCacheLocal = true;
                                     pasoLockDeAdentro = true;
@@ -613,56 +617,7 @@ namespace Proyecto_Arqui
 
             int contenidoDeMem = cache[palabraDelDato, bloque_a_cache(bloqueDelDato)];
             registros[X] = contenidoDeMem;
-            if (esLoadLink)
-            {
-                string hiloActual = System.Threading.Thread.CurrentThread.Name;
-                switch (hiloActual)
-                {
-                    case "Nucleo1":
-                        //RL = n + R[Y]
-                        bool done = false;
-                        object locker = new object();
-                        lock (locker)
-                        {
-                            while (!done)
-                            {
-                                RL_1 = direccionDelDato;
-                                done = true;
-                            }
-                        }
-                        break;
-                    case "Nucleo2":
-                        //RL = n + R[Y]
-                        bool done1 = false;
-                        object locker1 = new object();
-                        lock (locker1)
-                        {
-                            while (!done1)
-                            {
-                                RL_2 = direccionDelDato;
-                                done1 = true;
-                            }
-                        }
-                        break;
-                    case "Nucleo3":
-                        //RL = n + R[Y]
-                        bool done2 = false;
-                        object locker2 = new object();
-                        lock (locker2)
-                        {
-                            while (!done2)
-                            {
-                                RL_3 = direccionDelDato;
-                                done2 = true;
-                            }
-                        }
-                        break;
-                }
-                
-            }
         }
-
-
         private static void ll_instruccion(int[] instru)
         {
             int X = instru[2];
@@ -686,8 +641,23 @@ namespace Proyecto_Arqui
                     break;
             }
         }
+        private static void LL(int direccionDondeSeGuarda)
+        {
+            string hiloActual = System.Threading.Thread.CurrentThread.Name;
+            switch (hiloActual)
+            {
+                case "Nucleo1":
+                    RL_1 = direccionDondeSeGuarda;
+                    break;
+                case "Nucleo2":
+                    RL_2 = direccionDondeSeGuarda;
+                    break;
+                case "Nucleo3":
+                    RL_3 = direccionDondeSeGuarda;
+                    break;
 
-
+            }
+        }
 
 
         private static void sw_instruccion(int[] instru)
@@ -716,26 +686,17 @@ namespace Proyecto_Arqui
         private static void sw_nucleo(int direccionDondeSeGuarda, int X, ref int[,] cache, ref int[,] primeraNoLocal, ref int[,] segundaNoLocal, bool esStoreConditional)
         {
             int bloqueDelDato = dir_a_bloque(direccionDondeSeGuarda);
-
+            int j = 28;
             if (cache_instruc[4, bloque_a_cache(bloqueDelDato) * 4] == bloqueDelDato)
             {
-                for (int i = 0; i < 7; i++)
-                {
-                    barreraCicloReloj.SignalAndWait();
-                }
-                //LOCKs
-                todosLosLocks(false, direccionDondeSeGuarda, X, ref cache, ref primeraNoLocal, ref segundaNoLocal, esStoreConditional);
+                j = 7;
             }
-            else
+            for (int i = 0; i < j; i++)
             {
-                for (int i = 0; i < 28; i++)
-                {
-                    barreraCicloReloj.SignalAndWait();
-                }
-                //LOCKs
-                todosLosLocks(true, direccionDondeSeGuarda, X, ref cache, ref primeraNoLocal, ref segundaNoLocal, esStoreConditional);
-
+                barreraCicloReloj.SignalAndWait();
             }
+            //LOCKs
+            todosLosLocks(true, direccionDondeSeGuarda, X, ref cache, ref primeraNoLocal, ref segundaNoLocal, esStoreConditional);
         }
         private static void todosLosLocks(bool fue_fallo, int direccionDondeSeGuarda, int X, ref int[,] cache, ref int[,] primeraNoLocal, ref int[,] segundaNoLocal, bool esStoreConditional)
         {
@@ -746,78 +707,82 @@ namespace Proyecto_Arqui
             {
                 algunoNOseObtuvo = false;
                 //cacheLocal
+                
                 if (Monitor.TryEnter(cache))
                 {
-                    try
+                    int[] losRLs= RLs();
+                    if (losRLs[0] == direccionDondeSeGuarda)
                     {
-                        //memoriaDatos
-                        if (Monitor.TryEnter(mem_principal_datos))
+                        losRLs[0] = -1;
+                        try
                         {
-                            try
+                            //memoriaDatos
+                            if (Monitor.TryEnter(mem_principal_datos))
                             {
-                                //cache2--------------------------------------------------------------------------
-                                if (Monitor.TryEnter(primeraNoLocal))
+                                try
                                 {
-                                    try
+                                    //cache2--------------------------------------------------------------------------
+                                    losRLs[1] = -1;
+                                    if (Monitor.TryEnter(primeraNoLocal))
                                     {
-                                        primeraNoLocal[5, bloque_a_cache(dir_a_bloque(direccionDondeSeGuarda))] = 1;//invalido
-                                        //cache3------------------------------------------------------------
-                                        if (Monitor.TryEnter(segundaNoLocal))
+                                        try
                                         {
-                                            try
+                                            primeraNoLocal[5, bloque_a_cache(dir_a_bloque(direccionDondeSeGuarda))] = 1;//invalido
+                                            //cache3------------------------------------------------------------
+                                            losRLs[2] = -1;
+                                            if (Monitor.TryEnter(segundaNoLocal))
                                             {
-                                                //LOGICA
-                                                if (fue_fallo)
+                                                try
                                                 {
-                                                    //se escribe solo en memoria
-                                                    mem_principal_datos[direccionDondeSeGuarda/4] = registros[X];
-                                                    if (esStoreConditional)
+                                                    //LOGICA
+                                                    if (fue_fallo)
                                                     {
-                                                        logica_sc(direccionDondeSeGuarda);
+                                                        //se escribe solo en memoria
+                                                        mem_principal_datos[direccionDondeSeGuarda / 4] = registros[X];
                                                     }
+                                                    else
+                                                    {
+                                                        //se escribe en cache y en memoria
+                                                        cache[dir_a_palabra(direccionDondeSeGuarda), bloque_a_cache(dir_a_bloque(direccionDondeSeGuarda))] = registros[X];
+                                                        mem_principal_datos[direccionDondeSeGuarda / 4] = registros[X];
+                                                    }
+                                                    segundaNoLocal[5, bloque_a_cache(dir_a_bloque(direccionDondeSeGuarda))] = 1;//invalido]
+                                                    accesoTodas = true;
                                                 }
-                                                else
+                                                finally
                                                 {
-                                                    //se escribe en cache y en memoria
-                                                    cache[dir_a_palabra(direccionDondeSeGuarda), bloque_a_cache(dir_a_bloque(direccionDondeSeGuarda))] = registros[X];
-                                                    mem_principal_datos[direccionDondeSeGuarda/4] = registros[X];
+                                                    Monitor.Exit(segundaNoLocal);
                                                 }
-                                                segundaNoLocal[5, bloque_a_cache(dir_a_bloque(direccionDondeSeGuarda))] = 1;//invalido]
-                                                accesoTodas = true;
                                             }
-                                            finally
+                                            else
                                             {
-                                                Monitor.Exit(segundaNoLocal);
-                                            }
+                                                algunoNOseObtuvo = true;
+                                            }//cache3------------------------------------------------------------
                                         }
-                                        else
+                                        finally
                                         {
-                                            algunoNOseObtuvo = true;
-                                        }//cache3------------------------------------------------------------
+                                            Monitor.Exit(primeraNoLocal);
+                                        }
                                     }
-                                    finally
+                                    else
                                     {
-                                        Monitor.Exit(primeraNoLocal);
-                                    }
+                                        algunoNOseObtuvo = true;
+                                    }//cache2--------------------------------------------------------------------------
                                 }
-                                else
+                                finally
                                 {
-                                    algunoNOseObtuvo = true;
-                                }//cache2--------------------------------------------------------------------------
-                            }
-                            finally
+                                    Monitor.Exit(mem_principal_datos);
+                                }
+                            }//memoriaDatos
+                            else
                             {
-                                Monitor.Exit(mem_principal_datos);
+                                algunoNOseObtuvo = true;
                             }
-                        }//memoriaDatos
-                        else
-                        {
-                            algunoNOseObtuvo = true;
                         }
-                    }
-                    finally
-                    {
-                        Monitor.Exit(cache);
+                        finally
+                        {
+                            Monitor.Exit(cache);
+                        }
                     }
                 }//cacheLocal
                 else
@@ -828,105 +793,30 @@ namespace Proyecto_Arqui
                 barreraCicloReloj.SignalAndWait(); //tratando de hacer el LOCK, se cuentan ciclos de reloj
             }
         }
-
-        private static void sc_instruccion(int[] instru)
+        private static int[] RLs()
         {
-            int X = instru[2];
-            int Y = instru[1];
-            int n = instru[3];
-
-            //Llamar proceso que hace todos los LOCKs, en la caché correspondiente
-            int direccionDondeSeGuarda = registros[Y] + n;
-            
             string hiloActual = System.Threading.Thread.CurrentThread.Name;
+            int[] result = new int[3];
             switch (hiloActual)
             {
                 case "Nucleo1":
-                    if (RL_1 == direccionDondeSeGuarda)
-                    {
-                        sw_nucleo(direccionDondeSeGuarda, X, ref cache_datos_1, ref cache_datos_2, ref cache_datos_3, true);
-                    } else
-                    {
-                        //Si RL no es igual a n + R[Y], se pone R[X]=0
-                        registros[X] = 0;
-                    }
-                    break;
+                    result[0] = RL_1;
+                    result[1] = RL_2;
+                    result[2] = RL_3;
+                    return result;
                 case "Nucleo2":
-                    if (RL_2 == direccionDondeSeGuarda)
-                    {
-                        sw_nucleo(direccionDondeSeGuarda, X, ref cache_datos_2, ref cache_datos_1, ref cache_datos_3, true);
-                    }
-                    else
-                    {
-                        //Si RL no es igual a n + R[Y], se pone R[X]=0
-                        registros[X] = 0;
-                    }
-                    break;
-                case "Nucleo3":
-                    if (RL_3 == direccionDondeSeGuarda)
-                    {
-                        sw_nucleo(direccionDondeSeGuarda, X, ref cache_datos_3, ref cache_datos_1, ref cache_datos_2, true);
-                    }
-                    else
-                    {
-                        //Si RL no es igual a n + R[Y], se pone R[X]=0
-                        registros[X] = 0;
-                    }
-                    break;
-            }
-        }
-        //ESTE MODIFICA RL
-        private static void logica_sc(int direccionDondeSeGuarda) {
-            // Se pone -1 en otras RL's, SI RL ES IGUAL A n+R[Y]
-            string hiloActual = System.Threading.Thread.CurrentThread.Name;
-            switch (hiloActual)
-            {
-                case "Nucleo1":
-                    //poner RL_2 y RL_3 en -1
-                    bool done = false;
-                    object locker = new object();
-                    lock (locker)
-                    {
-                        while (!done)
-                        {
-                            RL_2 = -1;
-                            RL_3 = -1;
-                            done = true;
-                        }
-                    }
-                    break;
-                case "Nucleo2":
-                    //poner RL_1 y RL_3 en -1
-                    bool done1 = false;
-                    object locker1 = new object();
-                    lock (locker1)
-                    {
-                        while (!done1)
-                        {
-                            RL_1 = -1;
-                            RL_3 = -1;
-                            done1 = true;
-                        }
-                    }
-                    break;
-                case "Nucleo3":
-                    //poner RL_2 y RL_1 en -1
-                    bool done2 = false;
-                    object locker2 = new object();
-                    lock (locker2)
-                    {
-                        while (!done2)
-                        {
-                            RL_1 = -1;
-                            RL_2 = -1;
-                            done2 = true;
-                        }
-                    }
-                    break;
+                    result[0] = RL_2;
+                    result[1] = RL_3;
+                    result[2] = RL_1;
+                    return result;
+                default:
+                    result[0] = RL_3;
+                    result[1] = RL_1;
+                    result[2] = RL_2;
+                    return result;
             }
 
         }
-
 
         /*--------------------------------------------------------------------*/
         private static void revisarSiCambioContexto()
@@ -936,12 +826,13 @@ namespace Proyecto_Arqui
                 if (mat_contextos[hilillo_actual - 1, 33] == 1)
                     finHilillo();
                 string hiloActual = System.Threading.Thread.CurrentThread.Name;
+                object locker = new object();
                 switch (hiloActual)
                 {
                     case "Nucleo1":
                         //RL = n + R[Y]
                         bool done = false;
-                        object locker = new object();
+                        
                         lock (locker)
                         {
                             while (!done)
@@ -954,8 +845,7 @@ namespace Proyecto_Arqui
                     case "Nucleo2":
                         //RL = n + R[Y]
                         bool done1 = false;
-                        object locker1 = new object();
-                        lock (locker1)
+                        lock (locker)
                         {
                             while (!done1)
                             {
@@ -967,8 +857,7 @@ namespace Proyecto_Arqui
                     case "Nucleo3":
                         //RL = n + R[Y]
                         bool done2 = false;
-                        object locker2 = new object();
-                        lock (locker2)
+                        lock (locker)
                         {
                             while (!done2)
                             {
