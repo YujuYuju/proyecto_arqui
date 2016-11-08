@@ -572,7 +572,7 @@ namespace Proyecto_Arqui
                                     //Logica Instruccion-----------------------------------------
                                     if (esLoadLink)
                                     {
-                                        LL(direccionDelDato);
+                                        RL_propio = direccionDelDato;
                                     }
                                     logica_lw(ref cache, bloqueDelDato, palabraDelDato, X, direccionDelDato, esLoadLink, ref RL_propio);
                                     accesoDeCacheLocal = true;
@@ -641,23 +641,6 @@ namespace Proyecto_Arqui
                     break;
             }
         }
-        private static void LL(int direccionDondeSeGuarda)
-        {
-            string hiloActual = System.Threading.Thread.CurrentThread.Name;
-            switch (hiloActual)
-            {
-                case "Nucleo1":
-                    RL_1 = direccionDondeSeGuarda;
-                    break;
-                case "Nucleo2":
-                    RL_2 = direccionDondeSeGuarda;
-                    break;
-                case "Nucleo3":
-                    RL_3 = direccionDondeSeGuarda;
-                    break;
-
-            }
-        }
 
 
         private static void sw_instruccion(int[] instru)
@@ -712,76 +695,22 @@ namespace Proyecto_Arqui
                 {
                     try
                     {
-                        if (RL_propia == direccionDondeSeGuarda)
+                        if (esStoreConditional)
                         {
-                            RL_propia = -1;
-
-                            //memoriaDatos
-                            if (Monitor.TryEnter(mem_principal_datos))
+                            if (RL_propia == direccionDondeSeGuarda)
                             {
-                                try
-                                {
-                                    //cache2--------------------------------------------------------------------------
-                                    RL_ajena1 = -1;
-                                    if (Monitor.TryEnter(primeraNoLocal))
-                                    {
-                                        try
-                                        {
-                                            primeraNoLocal[5, bloque_a_cache(dir_a_bloque(direccionDondeSeGuarda))] = 1;//invalido
-                                            //cache3------------------------------------------------------------
-                                            RL_ajena2 = -1;
-                                            if (Monitor.TryEnter(segundaNoLocal))
-                                            {
-                                                try
-                                                {
-                                                    //LOGICA
-                                                    if (fue_fallo)
-                                                    {
-                                                        //se escribe solo en memoria
-                                                        mem_principal_datos[direccionDondeSeGuarda / 4] = registros[X];
-                                                    }
-                                                    else
-                                                    {
-                                                        //se escribe en cache y en memoria
-                                                        cache[dir_a_palabra(direccionDondeSeGuarda), bloque_a_cache(dir_a_bloque(direccionDondeSeGuarda))] = registros[X];
-                                                        mem_principal_datos[direccionDondeSeGuarda / 4] = registros[X];
-                                                    }
-                                                    segundaNoLocal[5, bloque_a_cache(dir_a_bloque(direccionDondeSeGuarda))] = 1;//invalido]
-                                                    accesoTodas = true;
-                                                }
-                                                finally
-                                                {
-                                                    Monitor.Exit(segundaNoLocal);
-                                                }
-                                            }
-                                            else
-                                            {
-                                                algunoNOseObtuvo = true;
-                                            }//cache3------------------------------------------------------------
-                                        }
-                                        finally
-                                        {
-                                            Monitor.Exit(primeraNoLocal);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        algunoNOseObtuvo = true;
-                                    }//cache2--------------------------------------------------------------------------
-                                }
-                                finally
-                                {
-                                    Monitor.Exit(mem_principal_datos);
-                                }
-                            }//memoriaDatos
+                                RL_propia = -1;
+                                //memoriaDatos   
+                                NewMethod(fue_fallo, direccionDondeSeGuarda, X, cache, primeraNoLocal, segundaNoLocal, ref RL_ajena1, ref RL_ajena2, ref algunoNOseObtuvo, ref accesoTodas);
+                            }
                             else
                             {
-                                algunoNOseObtuvo = true;
+                                registros[X] = 0;
+                                accesoTodas = true;
                             }
-                        } else
-                        {
-                            registros[X] = 0;
                         }
+                        else
+                            NewMethod(fue_fallo, direccionDondeSeGuarda, X, cache, primeraNoLocal, segundaNoLocal, ref RL_ajena1, ref RL_ajena2, ref algunoNOseObtuvo, ref accesoTodas);
                     }
                     finally
                     {
@@ -797,8 +726,73 @@ namespace Proyecto_Arqui
         }
     }
 
-    /*--------------------------------------------------------------------*/
-    private static void revisarSiCambioContexto()
+        private static void NewMethod(bool fue_fallo, int direccionDondeSeGuarda, int X, int[,] cache, int[,] primeraNoLocal, int[,] segundaNoLocal, ref int RL_ajena1, ref int RL_ajena2, ref bool algunoNOseObtuvo, ref bool accesoTodas)
+        {
+            if (Monitor.TryEnter(mem_principal_datos))
+            {
+                try
+                {
+                    //cache2--------------------------------------------------------------------------
+                    RL_ajena1 = -1;
+                    if (Monitor.TryEnter(primeraNoLocal))
+                    {
+                        try
+                        {
+                            primeraNoLocal[5, bloque_a_cache(dir_a_bloque(direccionDondeSeGuarda))] = 1;//invalido
+                                                                                                        //cache3------------------------------------------------------------
+                            RL_ajena2 = -1;
+                            if (Monitor.TryEnter(segundaNoLocal))
+                            {
+                                try
+                                {
+                                    //LOGICA
+                                    if (fue_fallo)
+                                    {
+                                        //se escribe solo en memoria
+                                        mem_principal_datos[direccionDondeSeGuarda / 4] = registros[X];
+                                    }
+                                    else
+                                    {
+                                        //se escribe en cache y en memoria
+                                        cache[dir_a_palabra(direccionDondeSeGuarda), bloque_a_cache(dir_a_bloque(direccionDondeSeGuarda))] = registros[X];
+                                        mem_principal_datos[direccionDondeSeGuarda / 4] = registros[X];
+                                    }
+                                    segundaNoLocal[5, bloque_a_cache(dir_a_bloque(direccionDondeSeGuarda))] = 1;//invalido]
+                                    accesoTodas = true;
+                                }
+                                finally
+                                {
+                                    Monitor.Exit(segundaNoLocal);
+                                }
+                            }
+                            else
+                            {
+                                algunoNOseObtuvo = true;
+                            }//cache3------------------------------------------------------------
+                        }
+                        finally
+                        {
+                            Monitor.Exit(primeraNoLocal);
+                        }
+                    }
+                    else
+                    {
+                        algunoNOseObtuvo = true;
+                    }//cache2--------------------------------------------------------------------------
+                }
+                finally
+                {
+                    Monitor.Exit(mem_principal_datos);
+                }
+            }//memoriaDatos
+            else
+            {
+                algunoNOseObtuvo = true;
+            }
+        }
+
+        /*--------------------------------------------------------------------*/
+        private static void revisarSiCambioContexto()
     {
         if (quantum == quantum_total || mat_contextos[hilillo_actual - 1, 33] == 1)
         {
