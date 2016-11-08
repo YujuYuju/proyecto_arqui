@@ -70,7 +70,7 @@ namespace Proyecto_Arqui
             cache_datos_2 = new int[6, 4];
             cache_datos_3 = new int[6, 4];
 
-            
+
             cache_datos_1[4, 0] = -1;
             cache_datos_1[4, 1] = -1;
             cache_datos_1[4, 2] = -1;
@@ -122,7 +122,7 @@ namespace Proyecto_Arqui
             {
                 mem_principal_instruc[ultimo_mem_inst++] = Int32.Parse(s);
             }
-            mat_contextos[i, 32] = ultimo_viejo+384;   //el PC
+            mat_contextos[i, 32] = ultimo_viejo + 384;   //el PC
 
         }
         public void leer_muchos_hilillos()//permite cargar todos los hilillos desde el txt a memoria
@@ -183,14 +183,14 @@ namespace Proyecto_Arqui
             }
         }
         private static String GetTimestamp(DateTime value)
-         {
-             return value.ToString("yyyyMMddhhmmssff");
-         }
+        {
+            return value.ToString("yyyyMMddhhmmssff");
+        }
 
         static void leerInstruccion()
         {
             //Buscar en cache, instruccion
-            int bloque = dir_a_bloque(PC-384);
+            int bloque = dir_a_bloque(PC - 384);
             if (cache_instruc[4, bloque_a_cache(bloque) * 4] == bloque)
             {
                 ejecutarInstruccion(); //La instruccion estaba en cache, ejecutarla
@@ -213,11 +213,11 @@ namespace Proyecto_Arqui
                             accesoInstrucciones = true;
                             //subir bloque a caché
                             int acum = 0;
-                            for (int ins=0; ins < 4; ins++)
+                            for (int ins = 0; ins < 4; ins++)
                             {
-                                for (int palabr=0; palabr<4; palabr++, acum++)
+                                for (int palabr = 0; palabr < 4; palabr++, acum++)
                                 {
-                                    cache_instruc[ins, palabr + bloque_a_cache(bloque) * 4]=mem_principal_instruc[bloque*16+acum];
+                                    cache_instruc[ins, palabr + bloque_a_cache(bloque) * 4] = mem_principal_instruc[bloque * 16 + acum];
 
                                 }
                             }
@@ -248,10 +248,10 @@ namespace Proyecto_Arqui
 
         static void ejecutarInstruccion()
         {
-            int bloque = dir_a_bloque(PC-384);
+            int bloque = dir_a_bloque(PC - 384);
             bloque = bloque_a_cache(bloque);
             bloque *= 4;
-            int palabra = dir_a_palabra(PC-384) % 4;
+            int palabra = dir_a_palabra(PC - 384) % 4;
             int[] instruccion = new int[4];
             instruccion[0] = cache_instruc[palabra, bloque];
             instruccion[1] = cache_instruc[palabra, bloque + 1];
@@ -295,7 +295,7 @@ namespace Proyecto_Arqui
                 revisarSiCambioContexto();
                 if (lento)
                     Console.ReadKey();
-               
+
             }
             barreraCicloReloj.RemoveParticipant();
         }
@@ -303,11 +303,11 @@ namespace Proyecto_Arqui
 
         private static void finHilillo()
         {
-            Console.WriteLine("Hilillo "+hilillo_actual + " paró");
+            Console.WriteLine("Hilillo " + hilillo_actual + " paró");
             for (int i = 0; i < 32; i++)
             {
                 Console.WriteLine("Registro[" + i + "]=" + registros[i]);
-            }          
+            }
         }
 
 
@@ -369,10 +369,10 @@ namespace Proyecto_Arqui
                 }
 
 
-                
+
                 Console.WriteLine("\nEste hilillo tardo " + mat_contextos[i, 34] + " ciclos en ejecutarse");
-                Console.WriteLine("\n****Fin de Hilillo****\n");                            
-        }
+                Console.WriteLine("\n****Fin de Hilillo****\n");
+            }
             Console.WriteLine("\n**Fin de Hilillo**\n");
 
         }
@@ -478,7 +478,7 @@ namespace Proyecto_Arqui
             if (param_1 == param_2)
             {
                 PC += param_3 * 4;
-            }            
+            }
             barreraCicloReloj.SignalAndWait();
         }
         private static void bnez_instruccion(int[] instru)
@@ -490,7 +490,7 @@ namespace Proyecto_Arqui
             if (param_1 != param_2)
             {
                 PC += param_3 * 4;
-            }           
+            }
             barreraCicloReloj.SignalAndWait();
         }
         private static void jal_instruccion(int[] instru)
@@ -510,7 +510,7 @@ namespace Proyecto_Arqui
             barreraCicloReloj.SignalAndWait();
             quantum++;
         }
-        
+
         private static void lw_instruccion(int[] instru)
         {
             int X = instru[2];
@@ -524,17 +524,17 @@ namespace Proyecto_Arqui
             switch (hiloActual)
             {
                 case "Nucleo1":
-                    lw_nucleo(direccionDelDato, X, ref cache_datos_1, false);
+                    lw_nucleo(direccionDelDato, X, ref cache_datos_1, false, ref RL_1);
                     break;
                 case "Nucleo2":
-                    lw_nucleo(direccionDelDato, X, ref cache_datos_2, false);
+                    lw_nucleo(direccionDelDato, X, ref cache_datos_2, false, ref RL_2);
                     break;
                 case "Nucleo3":
-                    lw_nucleo(direccionDelDato, X, ref cache_datos_3, false);
+                    lw_nucleo(direccionDelDato, X, ref cache_datos_3, false, ref RL_3);
                     break;
             }
         }
-        private static void lw_nucleo(int direccionDelDato, int X, ref int[,] cache, bool esLoadLink)
+        private static void lw_nucleo(int direccionDelDato, int X, ref int[,] cache, bool esLoadLink, ref int RL_propio)
         {
             int bloqueDelDato = dir_a_bloque(direccionDelDato);
             int palabraDelDato = dir_a_palabra(direccionDelDato);
@@ -574,7 +574,7 @@ namespace Proyecto_Arqui
                                     {
                                         LL(direccionDelDato);
                                     }
-                                    logica_lw(ref cache, bloqueDelDato, palabraDelDato, X, direccionDelDato, esLoadLink);
+                                    logica_lw(ref cache, bloqueDelDato, palabraDelDato, X, direccionDelDato, esLoadLink, ref RL_propio);
                                     accesoDeCacheLocal = true;
                                     pasoLockDeAdentro = true;
                                 }
@@ -603,12 +603,12 @@ namespace Proyecto_Arqui
             }
         }
 
-        private static void logica_lw(ref int[,] cache, int bloqueDelDato, int palabraDelDato, int X, int direccionDelDato, bool esLoadLink)
+        private static void logica_lw(ref int[,] cache, int bloqueDelDato, int palabraDelDato, int X, int direccionDelDato, bool esLoadLink, ref int RL_propio)
         {
             //subir bloque a caché
             for (int i = 0; i < 4; i++)
             {
-                cache[i, bloque_a_cache(bloqueDelDato)] = mem_principal_datos[direccionDelDato/4];
+                cache[i, bloque_a_cache(bloqueDelDato)] = mem_principal_datos[direccionDelDato / 4];
             }
             cache[4, bloque_a_cache(bloqueDelDato)] = bloqueDelDato;
 
@@ -631,13 +631,13 @@ namespace Proyecto_Arqui
             switch (hiloActual)
             {
                 case "Nucleo1":
-                    lw_nucleo(direccionDelDato, X, ref cache_datos_1, true);
+                    lw_nucleo(direccionDelDato, X, ref cache_datos_1, true, ref RL_1);
                     break;
                 case "Nucleo2":
-                    lw_nucleo(direccionDelDato, X, ref cache_datos_2, true);
+                    lw_nucleo(direccionDelDato, X, ref cache_datos_2, true, ref RL_2);
                     break;
                 case "Nucleo3":
-                    lw_nucleo(direccionDelDato, X, ref cache_datos_3, true);
+                    lw_nucleo(direccionDelDato, X, ref cache_datos_3, true, ref RL_3);
                     break;
             }
         }
@@ -673,17 +673,17 @@ namespace Proyecto_Arqui
             switch (hiloActual)
             {
                 case "Nucleo1":
-                    sw_nucleo(direccionDondeSeGuarda, X, ref cache_datos_1, ref cache_datos_2, ref cache_datos_3,false);
+                    sw_nucleo(direccionDondeSeGuarda, X, ref cache_datos_1, ref cache_datos_2, ref cache_datos_3, ref RL_1, ref RL_2, ref RL_3, false);
                     break;
                 case "Nucleo2":
-                    sw_nucleo(direccionDondeSeGuarda, X, ref cache_datos_2, ref cache_datos_1, ref cache_datos_3, false);
+                    sw_nucleo(direccionDondeSeGuarda, X, ref cache_datos_2, ref cache_datos_1, ref cache_datos_3, ref RL_2, ref RL_1, ref RL_3, false);
                     break;
                 case "Nucleo3":
-                    sw_nucleo(direccionDondeSeGuarda, X, ref cache_datos_3, ref cache_datos_1, ref cache_datos_2, false);
+                    sw_nucleo(direccionDondeSeGuarda, X, ref cache_datos_3, ref cache_datos_1, ref cache_datos_2, ref RL_3, ref RL_2, ref RL_1, false);
                     break;
             }
         }
-        private static void sw_nucleo(int direccionDondeSeGuarda, int X, ref int[,] cache, ref int[,] primeraNoLocal, ref int[,] segundaNoLocal, bool esStoreConditional)
+        private static void sw_nucleo(int direccionDondeSeGuarda, int X, ref int[,] cache, ref int[,] primeraNoLocal, ref int[,] segundaNoLocal, ref int RL_propia, ref int RL_ajena1, ref int RL_ajena2, bool esStoreConditional)
         {
             int bloqueDelDato = dir_a_bloque(direccionDondeSeGuarda);
             int j = 28;
@@ -696,9 +696,9 @@ namespace Proyecto_Arqui
                 barreraCicloReloj.SignalAndWait();
             }
             //LOCKs
-            todosLosLocks(true, direccionDondeSeGuarda, X, ref cache, ref primeraNoLocal, ref segundaNoLocal, esStoreConditional);
+            todosLosLocks(true, direccionDondeSeGuarda, X, ref cache, ref primeraNoLocal, ref segundaNoLocal, esStoreConditional, ref RL_propia, ref RL_ajena1, ref RL_ajena2);
         }
-        private static void todosLosLocks(bool fue_fallo, int direccionDondeSeGuarda, int X, ref int[,] cache, ref int[,] primeraNoLocal, ref int[,] segundaNoLocal, bool esStoreConditional)
+        private static void todosLosLocks(bool fue_fallo, int direccionDondeSeGuarda, int X, ref int[,] cache, ref int[,] primeraNoLocal, ref int[,] segundaNoLocal, bool esStoreConditional, ref int RL_propia, ref int RL_ajena1, ref int RL_ajena2)
         {
             bool algunoNOseObtuvo = false;
 
@@ -707,29 +707,29 @@ namespace Proyecto_Arqui
             {
                 algunoNOseObtuvo = false;
                 //cacheLocal
-                
+
                 if (Monitor.TryEnter(cache))
                 {
-                    int[] losRLs= RLs();
-                    if (losRLs[0] == direccionDondeSeGuarda)
+                    try
                     {
-                        losRLs[0] = -1;
-                        try
+                        if (RL_propia == direccionDondeSeGuarda)
                         {
+                            RL_propia = -1;
+
                             //memoriaDatos
                             if (Monitor.TryEnter(mem_principal_datos))
                             {
                                 try
                                 {
                                     //cache2--------------------------------------------------------------------------
-                                    losRLs[1] = -1;
+                                    RL_ajena1 = -1;
                                     if (Monitor.TryEnter(primeraNoLocal))
                                     {
                                         try
                                         {
                                             primeraNoLocal[5, bloque_a_cache(dir_a_bloque(direccionDondeSeGuarda))] = 1;//invalido
                                             //cache3------------------------------------------------------------
-                                            losRLs[2] = -1;
+                                            RL_ajena2 = -1;
                                             if (Monitor.TryEnter(segundaNoLocal))
                                             {
                                                 try
@@ -778,225 +778,204 @@ namespace Proyecto_Arqui
                             {
                                 algunoNOseObtuvo = true;
                             }
-                        }
-                        finally
+                        } else
                         {
-                            Monitor.Exit(cache);
+                            registros[X] = 0;
                         }
+                    }
+                    finally
+                    {
+                        Monitor.Exit(cache);
                     }
                 }//cacheLocal
                 else
                 {
-                    if (!algunoNOseObtuvo)
-                        barreraCicloReloj.SignalAndWait(); //tratando de hacer el LOCK, se cuentan ciclos de reloj
-                }
-                barreraCicloReloj.SignalAndWait(); //tratando de hacer el LOCK, se cuentan ciclos de reloj
+                if (!algunoNOseObtuvo)
+                    barreraCicloReloj.SignalAndWait(); //tratando de hacer el LOCK, se cuentan ciclos de reloj
             }
+            barreraCicloReloj.SignalAndWait(); //tratando de hacer el LOCK, se cuentan ciclos de reloj
         }
-        private static int[] RLs()
+    }
+
+    /*--------------------------------------------------------------------*/
+    private static void revisarSiCambioContexto()
+    {
+        if (quantum == quantum_total || mat_contextos[hilillo_actual - 1, 33] == 1)
         {
+            if (mat_contextos[hilillo_actual - 1, 33] == 1)
+                finHilillo();
             string hiloActual = System.Threading.Thread.CurrentThread.Name;
-            int[] result = new int[3];
+            object locker = new object();
             switch (hiloActual)
             {
                 case "Nucleo1":
-                    result[0] = RL_1;
-                    result[1] = RL_2;
-                    result[2] = RL_3;
-                    return result;
+                    //RL = n + R[Y]
+                    bool done = false;
+
+                    lock (locker)
+                    {
+                        while (!done)
+                        {
+                            RL_1 = -1;
+                            done = true;
+                        }
+                    }
+                    break;
                 case "Nucleo2":
-                    result[0] = RL_2;
-                    result[1] = RL_3;
-                    result[2] = RL_1;
-                    return result;
-                default:
-                    result[0] = RL_3;
-                    result[1] = RL_1;
-                    result[2] = RL_2;
-                    return result;
+                    //RL = n + R[Y]
+                    bool done1 = false;
+                    lock (locker)
+                    {
+                        while (!done1)
+                        {
+                            RL_2 = -1;
+                            done1 = true;
+                        }
+                    }
+                    break;
+                case "Nucleo3":
+                    //RL = n + R[Y]
+                    bool done2 = false;
+                    lock (locker)
+                    {
+                        while (!done2)
+                        {
+                            RL_3 = -1;
+                            done2 = true;
+                        }
+                    }
+                    break;
             }
 
-        }
-
-        /*--------------------------------------------------------------------*/
-        private static void revisarSiCambioContexto()
-        {
-            if (quantum == quantum_total || mat_contextos[hilillo_actual - 1, 33] == 1)
+            //hacer cambio de contexto
+            quantum = 0;
+            for (int i = 0; i < 32; i++)
             {
-                if (mat_contextos[hilillo_actual - 1, 33] == 1)
-                    finHilillo();
-                string hiloActual = System.Threading.Thread.CurrentThread.Name;
-                object locker = new object();
-                switch (hiloActual)
-                {
-                    case "Nucleo1":
-                        //RL = n + R[Y]
-                        bool done = false;
-                        
-                        lock (locker)
-                        {
-                            while (!done)
-                            {
-                                RL_1 = -1;
-                                done = true;
-                            }
-                        }
-                        break;
-                    case "Nucleo2":
-                        //RL = n + R[Y]
-                        bool done1 = false;
-                        lock (locker)
-                        {
-                            while (!done1)
-                            {
-                                RL_2 = -1;
-                                done1 = true;
-                            }
-                        }
-                        break;
-                    case "Nucleo3":
-                        //RL = n + R[Y]
-                        bool done2 = false;
-                        lock (locker)
-                        {
-                            while (!done2)
-                            {
-                                RL_3 = -1;
-                                done2 = true;
-                            }
-                        }
-                        break;
-                }
-
-                //hacer cambio de contexto
-                quantum = 0;
-                for (int i = 0; i < 32; i++)
-                {
-                    mat_contextos[hilillo_actual - 1, i] = registros[i];
-                }
-                mat_contextos[hilillo_actual - 1, 32] = PC;
-                mat_contextos[hilillo_actual - 1, 34] += long.Parse(GetTimestamp(DateTime.Now));
-                //escoger hilillo de nuevo
-                escogerHililloNuevo();
-                Console.Write("\n**Se ha realizado un cambio de contexto\n");
-                // PrintMatriz(mat_contextos);
+                mat_contextos[hilillo_actual - 1, i] = registros[i];
             }
+            mat_contextos[hilillo_actual - 1, 32] = PC;
+            mat_contextos[hilillo_actual - 1, 34] += long.Parse(GetTimestamp(DateTime.Now));
+            //escoger hilillo de nuevo
+            escogerHililloNuevo();
+            Console.Write("\n**Se ha realizado un cambio de contexto\n");
+            // PrintMatriz(mat_contextos);
         }
-        static void escogerHililloNuevo()
+    }
+    static void escogerHililloNuevo()
+    {
+        bool hilillo_nuevo_escogido = false;
+        while (hilillo_nuevo_escogido == false)
         {
-            bool hilillo_nuevo_escogido = false;
-            while (hilillo_nuevo_escogido == false)
+            int indiceATomar = -1;
+            hilillo_nuevo_escogido = true;
+            for (int i = 0; i < mat_contextos.GetLength(0); i++)
             {
-                int indiceATomar = -1;
-                hilillo_nuevo_escogido = true;
-                for (int i = 0; i < mat_contextos.GetLength(0); i++)
+                if (mat_contextos[i, 33] != 1 && !hilillos_tomados.Contains(i + 1))
                 {
-                    if (mat_contextos[i, 33] != 1 && !hilillos_tomados.Contains(i + 1))
+                    indiceATomar = i;
+                    break;
+                }
+            }
+            if (indiceATomar != -1)
+            {
+                if (Monitor.TryEnter(mat_contextos))
+                {
+                    try
                     {
-                        indiceATomar = i;
-                        break;
+                        hilillos_tomados.Remove(hilillo_actual);
+                        hilillos_tomados.Add(indiceATomar + 1);  //poner numero de hilillo, correspondiente con el PC
+                                                                 //mat_contextos[hilillo_actual - 1, 34] -= Int32.Parse(GetTimestamp(DateTime.Now));
+                        hilillo_actual = indiceATomar + 1;
+                        PC = (int)mat_contextos[indiceATomar, 32];
+                        Console.WriteLine(System.Threading.Thread.CurrentThread.Name + " tomo el hilillo " + (indiceATomar + 1));
+                        for (int i = 0; i < 32; i++)
+                        {
+                            registros[i] = (int)mat_contextos[hilillo_actual - 1, i];
+                        }
+                    }
+                    finally
+                    {
+                        Monitor.Exit(mat_contextos);
                     }
                 }
-                if (indiceATomar != -1)
+                else
                 {
-                    if (Monitor.TryEnter(mat_contextos))
-                    {
-                        try
-                        {
-                            hilillos_tomados.Remove(hilillo_actual);
-                            hilillos_tomados.Add(indiceATomar + 1);  //poner numero de hilillo, correspondiente con el PC
-                            //mat_contextos[hilillo_actual - 1, 34] -= Int32.Parse(GetTimestamp(DateTime.Now));
-                            hilillo_actual = indiceATomar + 1;
-                            PC = (int)mat_contextos[indiceATomar, 32];
-                            Console.WriteLine(System.Threading.Thread.CurrentThread.Name + " tomo el hilillo " + (indiceATomar + 1));
-                            for (int i = 0; i < 32; i++)
-                            {
-                                registros[i] = (int)mat_contextos[hilillo_actual - 1, i];
-                            }
-                        }
-                        finally
-                        {
-                            Monitor.Exit(mat_contextos);
-                        }
-                    }
-                    else
-                    {
-                        hilillo_nuevo_escogido = false;
-                    }
+                    hilillo_nuevo_escogido = false;
                 }
             }
         }
+    }
 
 
 
 
-        /*-------------------------------------------------------------------*/
-        /*MAIN---------------------------------------------------------------*/
-        static void Main(string[] args)
-        {
-            Program p = new Program();
-            p.menu_usuario();
-            p.leer_muchos_hilillos();
-            modoDeEjejcucion();
-            int cantidad = cant_hilillos > 3 ? 3 : cant_hilillos;
-            barreraCicloReloj = new Barrier(cantidad,
-                b =>
-                {
+    /*-------------------------------------------------------------------*/
+    /*MAIN---------------------------------------------------------------*/
+    static void Main(string[] args)
+    {
+        Program p = new Program();
+        p.menu_usuario();
+        p.leer_muchos_hilillos();
+        modoDeEjejcucion();
+        int cantidad = cant_hilillos > 3 ? 3 : cant_hilillos;
+        barreraCicloReloj = new Barrier(cantidad,
+            b =>
+            {
                     //Console.WriteLine("Todos han llegado.");
                     ciclos_reloj++;
                     //Console.WriteLine("Ciclos de reloj hasta ahora: {0}", ciclos_reloj);
                 });
-            //crear nucleos
-            var nucleo1 = new Thread(new ThreadStart(procesoDelNucelo));
-            nucleo1.Name = String.Format("Nucleo{0}", 1);
+        //crear nucleos
+        var nucleo1 = new Thread(new ThreadStart(procesoDelNucelo));
+        nucleo1.Name = String.Format("Nucleo{0}", 1);
 
 
-            var nucleo2 = new Thread(new ThreadStart(procesoDelNucelo));
-            nucleo2.Name = String.Format("Nucleo{0}", 2);
+        var nucleo2 = new Thread(new ThreadStart(procesoDelNucelo));
+        nucleo2.Name = String.Format("Nucleo{0}", 2);
 
-            var nucleo3 = new Thread(new ThreadStart(procesoDelNucelo));
-            nucleo3.Name = String.Format("Nucleo{0}", 3);
+        var nucleo3 = new Thread(new ThreadStart(procesoDelNucelo));
+        nucleo3.Name = String.Format("Nucleo{0}", 3);
 
-            if (cantidad == 1)
-            {
-                nucleo1.Start();
-            }
-            else if (cantidad == 2)
-            {
-                nucleo1.Start();
-                nucleo2.Start();
-            }
-            else
-            {
-                nucleo1.Start();
-                nucleo2.Start();
-                nucleo3.Start();
-            }
-
-
-            Console.ReadKey();
+        if (cantidad == 1)
+        {
+            nucleo1.Start();
+        }
+        else if (cantidad == 2)
+        {
+            nucleo1.Start();
+            nucleo2.Start();
+        }
+        else
+        {
+            nucleo1.Start();
+            nucleo2.Start();
+            nucleo3.Start();
         }
 
 
+        Console.ReadKey();
+    }
 
-        private static void PrintMatriz(int[,] matriz)
+
+
+    private static void PrintMatriz(int[,] matriz)
+    {
+        for (int i = 0; i < matriz.GetLength(0); i++)
         {
-            for (int i = 0; i < matriz.GetLength(0); i++)
+            for (int j = 0; j < matriz.GetLength(1); j++)
             {
-                for (int j = 0; j < matriz.GetLength(1); j++)
-                {
-                    Console.Write(" " + matriz[i, j]);
-                }
-                Console.WriteLine("");
-            }
-        }
-        private static void PrintVector(int[] vector)
-        {
-            for (int i = 0; i < vector.GetLength(0); i++)
-            {
-                Console.Write(" " + vector[i]);
+                Console.Write(" " + matriz[i, j]);
             }
             Console.WriteLine("");
         }
     }
+    private static void PrintVector(int[] vector)
+    {
+        for (int i = 0; i < vector.GetLength(0); i++)
+        {
+            Console.Write(" " + vector[i]);
+        }
+        Console.WriteLine("");
+    }
+}
 }
