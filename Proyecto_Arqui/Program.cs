@@ -58,7 +58,7 @@ namespace Proyecto_Arqui
         /*Inicio del programa-----------------------------------------------*/
         public Program() //constructor, se inicializan las variables
         {
-            mem_principal_datos = new int[96];
+            mem_principal_datos = new int[100];
             for (int i = 0; i < mem_principal_datos.Length; i++)
             {
                 mem_principal_datos[i] = 1;
@@ -635,10 +635,10 @@ namespace Proyecto_Arqui
         {
             //subir bloque a caché
             int acum = 0;
-            int direccion = 0;
+            int bloque = direccionDelDato/16*4;
             for (int ins = 0; ins < 4; ins++, acum++)
             {
-                cache[ins, bloque_a_cache(direccionDelDato / 16)] = mem_principal_datos[direccionDelDato/4+acum];
+                cache[ins, bloque_a_cache(direccionDelDato / 16)] = mem_principal_datos[((direccionDelDato)/4)+acum];
             }
 
             cache[4, bloque_a_cache(direccionDelDato / 16)] = direccionDelDato / 16;
@@ -813,68 +813,68 @@ namespace Proyecto_Arqui
 
         /*--------------------------------------------------------------------*/
         private static void revisarSiCambioContexto()
-    {
-        if (quantum == quantum_total || mat_contextos[hilillo_actual - 1, 33] == 1)
         {
-            if (mat_contextos[hilillo_actual - 1, 33] == 1)
-                finHilillo();
-            string hiloActual = System.Threading.Thread.CurrentThread.Name;
-            object locker = new object();
-            switch (hiloActual)
+            if (quantum == quantum_total || mat_contextos[hilillo_actual - 1, 33] == 1)
             {
-                case "Nucleo1":
-                    //RL = n + R[Y]
-                    bool done = false;
+                if (mat_contextos[hilillo_actual - 1, 33] == 1)
+                    finHilillo();
+                string hiloActual = System.Threading.Thread.CurrentThread.Name;
+                object locker = new object();
+                switch (hiloActual)
+                {
+                    case "Nucleo1":
+                        //RL = n + R[Y]
+                        bool done = false;
 
-                    lock (locker)
-                    {
-                        while (!done)
+                        lock (locker)
                         {
-                            RL_1 = -1;
-                            done = true;
+                            while (!done)
+                            {
+                                RL_1 = -1;
+                                done = true;
+                            }
                         }
-                    }
-                    break;
-                case "Nucleo2":
-                    //RL = n + R[Y]
-                    bool done1 = false;
-                    lock (locker)
-                    {
-                        while (!done1)
+                        break;
+                    case "Nucleo2":
+                        //RL = n + R[Y]
+                        bool done1 = false;
+                        lock (locker)
                         {
-                            RL_2 = -1;
-                            done1 = true;
+                            while (!done1)
+                            {
+                                RL_2 = -1;
+                                done1 = true;
+                            }
                         }
-                    }
-                    break;
-                case "Nucleo3":
-                    //RL = n + R[Y]
-                    bool done2 = false;
-                    lock (locker)
-                    {
-                        while (!done2)
+                        break;
+                    case "Nucleo3":
+                        //RL = n + R[Y]
+                        bool done2 = false;
+                        lock (locker)
                         {
-                            RL_3 = -1;
-                            done2 = true;
+                            while (!done2)
+                            {
+                                RL_3 = -1;
+                                done2 = true;
+                            }
                         }
-                    }
-                    break;
-            }
+                        break;
+                }
 
-            //hacer cambio de contexto
-            quantum = 0;
-            for (int i = 0; i < 32; i++)
-            {
-                mat_contextos[hilillo_actual - 1, i] = registros[i];
+                //hacer cambio de contexto
+                quantum = 0;
+                for (int i = 0; i < 32; i++)
+                {
+                    mat_contextos[hilillo_actual - 1, i] = registros[i];
+                }
+                mat_contextos[hilillo_actual - 1, 32] = PC;
+                mat_contextos[hilillo_actual - 1, 34] += long.Parse(GetTimestamp(DateTime.Now));
+                //escoger hilillo de nuevo
+                escogerHililloNuevo();
+                Console.Write("\n**Se ha realizado un cambio de contexto\n");
+                // PrintMatriz(mat_contextos);
             }
-            mat_contextos[hilillo_actual - 1, 32] = PC;
-            mat_contextos[hilillo_actual - 1, 34] += long.Parse(GetTimestamp(DateTime.Now));
-            //escoger hilillo de nuevo
-            escogerHililloNuevo();
-            Console.Write("\n**Se ha realizado un cambio de contexto\n");
-            // PrintMatriz(mat_contextos);
         }
-    }
         static void escogerHililloNuevo()
         {
             bool hilillo_nuevo_escogido = false;
