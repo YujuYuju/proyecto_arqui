@@ -585,6 +585,10 @@ namespace Proyecto_Arqui
                             int contenidoDeMem = cache[palabraDelDato, bloque_a_cache(bloqueDelDato)];
                             registros[X] = contenidoDeMem;
                             fue_fallo = false;
+                            if (esLoadLink)
+                            {
+                                RL_propio = direccionDelDato;
+                            }
                         } else
                         {
                             fue_fallo = true;
