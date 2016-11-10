@@ -11,3 +11,8 @@ C:\Users\Helena\Documents\GitHub\proyecto_arqui\Proyecto_Arqui\obj\Debug\Proyect
 C:\Users\Helena\Documents\GitHub\proyecto_arqui\Proyecto_Arqui\bin\Debug\Proyecto_Arqui.exe
 C:\Users\Helena\Documents\GitHub\proyecto_arqui\Proyecto_Arqui\bin\Debug\Proyecto_Arqui.pdb
 C:\Users\Helena\Documents\GitHub\proyecto_arqui\Proyecto_Arqui\obj\Debug\Proyecto_Arqui.csprojResolveAssemblyReference.cache
+C:\Users\b30721.ECCI\Documents\GitHub\proyecto_arqui\Proyecto_Arqui\bin\Debug\Proyecto_Arqui.exe.config
+C:\Users\b30721.ECCI\Documents\GitHub\proyecto_arqui\Proyecto_Arqui\obj\Debug\Proyecto_Arqui.exe
+C:\Users\b30721.ECCI\Documents\GitHub\proyecto_arqui\Proyecto_Arqui\obj\Debug\Proyecto_Arqui.pdb
+C:\Users\b30721.ECCI\Documents\GitHub\proyecto_arqui\Proyecto_Arqui\bin\Debug\Proyecto_Arqui.exe
+C:\Users\b30721.ECCI\Documents\GitHub\proyecto_arqui\Proyecto_Arqui\bin\Debug\Proyecto_Arqui.pdb

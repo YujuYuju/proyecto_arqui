@@ -565,8 +565,30 @@ namespace Proyecto_Arqui
 
         private static void lw_nucleo(int direccionDelDato, int X, ref int[,] cache, bool esLoadLink, ref int RL_propio)
         {
-            int bloqueDelDato = direccionDelDato/4;
-            int palabraDelDato = direccionDelDato % (4) / 4;
+            int bloqueDelDato = direccionDelDato/16;
+            int palabraDelDato = direccionDelDato % (16) / 4;
+            int bloqueEnCache = bloque_a_cache(bloqueDelDato);
+
+
+
+            //cacheLocal----------------------------------------------------------
+            if (Monitor.TryEnter(cache))
+            {
+                try
+                {
+
+
+                }
+                finally
+                {
+                    Monitor.Exit(cache);
+                }
+            }
+            else
+            {
+                barreraCicloReloj.SignalAndWait(); //tratando de hacer el LOCK, se cuentan ciclos de reloj
+            }
+
 
 
             if (cache[4, bloque_a_cache(bloqueDelDato)] == bloqueDelDato && cache[5, bloque_a_cache(bloqueDelDato)] != 1)
@@ -576,6 +598,7 @@ namespace Proyecto_Arqui
             }
             else
             {
+                Console.WriteLine("HUBO FALLO. NUM BLOQUE=" +bloqueDelDato);
                 for (int i = 0; i < 28; i++)
                 {
                     barreraCicloReloj.SignalAndWait();
@@ -636,9 +659,9 @@ namespace Proyecto_Arqui
             //subir bloque a caché
             int acum = 0;
             int bloque = direccionDelDato/16*4;
-            for (int ins = 0; ins < 4; ins++, acum++)
+            for (int ins = 0; ins < 4; ins++)
             {
-                cache[ins, bloque_a_cache(direccionDelDato / 16)] = mem_principal_datos[((direccionDelDato)/4)+acum];
+                cache[ins, bloque_a_cache(direccionDelDato / 16)] = mem_principal_datos[((direccionDelDato)/4)+ins];
             }
 
             cache[4, bloque_a_cache(direccionDelDato / 16)] = direccionDelDato / 16;
@@ -709,9 +732,11 @@ namespace Proyecto_Arqui
                         {
                             if (RL_propia == direccionDondeSeGuarda)
                             {
-                                RL_propia = -1;
+                                
                                 //memoriaDatos   
                                 NewMethod(fue_fallo, direccionDondeSeGuarda, X, cache, primeraNoLocal, segundaNoLocal, ref RL_ajena1, ref RL_ajena2, ref algunoNOseObtuvo, ref accesoTodas);
+
+                                RL_propia = -1;
                             }
                             else
                             {
@@ -746,18 +771,34 @@ namespace Proyecto_Arqui
                 try
                 {
                     //cache2--------------------------------------------------------------------------
-                    RL_ajena1 = -1;
+                    
                     if (Monitor.TryEnter(primeraNoLocal))
                     {
+                        
                         try
                         {
-                            primeraNoLocal[5, bloque_a_cache(dir_a_bloque(direccionDondeSeGuarda))] = 1;//invalido
+                            if (RL_ajena1 == direccionDondeSeGuarda)
+                            {
+                                RL_ajena1 = -1;
+                            }
+                            if (cache[4, bloque_a_cache(dir_a_bloque(direccionDondeSeGuarda))] == dir_a_bloque(direccionDondeSeGuarda))
+                            {
+                                primeraNoLocal[5, bloque_a_cache(dir_a_bloque(direccionDondeSeGuarda))] = 1;//invalido
+                            }
+
                             //cache3------------------------------------------------------------
-                            RL_ajena2 = -1;
                             if (Monitor.TryEnter(segundaNoLocal))
                             {
                                 try
                                 {
+                                    if (RL_ajena2 == direccionDondeSeGuarda)
+                                    {
+                                        RL_ajena2 = -1;
+                                    }
+                                    if (cache[4, bloque_a_cache(dir_a_bloque(direccionDondeSeGuarda))] == dir_a_bloque(direccionDondeSeGuarda))
+                                    {
+                                        segundaNoLocal[5, bloque_a_cache(dir_a_bloque(direccionDondeSeGuarda))] = 1;//invalido
+                                    }
                                     //LOGICA
                                     if (fue_fallo)
                                     {
@@ -771,7 +812,6 @@ namespace Proyecto_Arqui
                                         //cache[dir_a_palabra(direccionDondeSeGuarda), bloque_a_cache(dir_a_bloque(direccionDondeSeGuarda))] = registros[X];
                                         mem_principal_datos[direccionDondeSeGuarda / 4] = registros[X];
                                     }
-                                    segundaNoLocal[5, bloque_a_cache(dir_a_bloque(direccionDondeSeGuarda))] = 1;//invalido]
                                     accesoTodas = true;
                                 }
                                 finally
