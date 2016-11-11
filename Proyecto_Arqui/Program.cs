@@ -695,12 +695,12 @@ namespace Proyecto_Arqui
         private static void sw_nucleo(int direccionDondeSeGuarda, int X, ref int[,] cache, ref int[,] primeraNoLocal, ref int[,] segundaNoLocal, ref int RL_propia, ref int RL_ajena1, ref int RL_ajena2, bool esStoreConditional)
         {
             int bloqueDelDato = dir_a_bloque(direccionDondeSeGuarda);
-            bool fueFallo = true;
+            bool fueFallo = false;
             int j = 28;
             if (cache[4, bloque_a_cache(bloqueDelDato)] == bloqueDelDato && cache[5, bloque_a_cache(bloqueDelDato)] != 1)
             {
                 j = 7;
-                fueFallo = false;
+                fueFallo = true;
             }
             for (int i = 0; i < j; i++)
             {
