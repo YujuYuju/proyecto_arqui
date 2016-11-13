@@ -165,7 +165,7 @@ namespace Proyecto_Arqui
                             {
                                 if (!hilillos_tomados.Contains(i + 1))
                                 {
-                                    mat_contextos[i, 34] -= long.Parse(GetTimestamp(DateTime.Now));
+                                    mat_contextos[i, 35] -= Int32.Parse(DateTime.Now.ToString("ddHHmmfff"));
                                     hilillos_tomados.Add(i + 1);  //poner numero de hilillo, correspondiente con el PC
                                     hilillo_actual = i + 1;
                                     PC = (int)mat_contextos[i, 32];
@@ -181,10 +181,6 @@ namespace Proyecto_Arqui
                     }
                 }
             }
-        }
-        private static String GetTimestamp(DateTime value)
-        {
-            return value.ToString("yyyyMMddhhmmssff");
         }
 
         static void leerInstruccion()
@@ -295,8 +291,13 @@ namespace Proyecto_Arqui
                 revisarSiCambioContexto();
                 if (lento)
                     Console.ReadKey();
-
             }
+            Console.WriteLine(System.Threading.Thread.CurrentThread.Name +"paro");
+            for(int i=0; i<32;i++)
+            {
+                Console.WriteLine("Registro["+i+"]="+registros[i]);
+            }
+
             barreraCicloReloj.RemoveParticipant();
         }
 
@@ -341,18 +342,17 @@ namespace Proyecto_Arqui
         }
 
 
-        public static void infoFinSimulacion()
+        public void infoFinSimulacion()
         {
             Console.WriteLine("\n**Fin de la Simulacion**\n\nLe memoria compartida quedo asi:\n");
             PrintVector(mem_principal_datos);
-            Console.WriteLine("\nPara cada hilillo que corrio:\n");
-
+            Console.WriteLine("\nPara cada hilillo que corrio:");
             for (int i = 0; i < mat_contextos.GetLength(0); i++)
             {
                 Console.Write("\n Registros: ");
                 for (int j = 0; j < 32; j++)
                 {
-                    Console.Write(" " + mat_contextos[i, j]);
+                    Console.Write(" R["+j+"]= " + mat_contextos[i, j]);
                 }
                 string hiloActual = System.Threading.Thread.CurrentThread.Name;
                 switch (hiloActual)
@@ -419,12 +419,6 @@ namespace Proyecto_Arqui
                     break;
                 case 63:
                     fin_instruccion(instruc);
-                    break;
-                case 50:
-                    ll_instruccion(instruc);
-                    break;
-                case 51:
-                    sw_instruccion(instruc);
                     break;
             }
         }
@@ -919,7 +913,7 @@ namespace Proyecto_Arqui
                     mat_contextos[hilillo_actual - 1, i] = registros[i];
                 }
                 mat_contextos[hilillo_actual - 1, 32] = PC;
-                mat_contextos[hilillo_actual - 1, 34] += long.Parse(GetTimestamp(DateTime.Now));
+                mat_contextos[hilillo_actual - 1, 35] += Int32.Parse(DateTime.Now.ToString("ddHHmmfff"));
                 //escoger hilillo de nuevo
                 escogerHililloNuevo();
                 Console.Write("\n**Se ha realizado un cambio de contexto\n");
@@ -949,7 +943,7 @@ namespace Proyecto_Arqui
                         {
                             hilillos_tomados.Remove(hilillo_actual);
                             hilillos_tomados.Add(indiceATomar + 1);  //poner numero de hilillo, correspondiente con el PC
-                                                                     //mat_contextos[hilillo_actual - 1, 34] -= Int32.Parse(GetTimestamp(DateTime.Now));
+                            mat_contextos[hilillo_actual - 1, 35] -= Int32.Parse(DateTime.Now.ToString("ddHHmmfff"));
                             hilillo_actual = indiceATomar + 1;
                             PC = (int)mat_contextos[indiceATomar, 32];
                             Console.WriteLine(System.Threading.Thread.CurrentThread.Name + " tomo el hilillo " + (indiceATomar));
@@ -1018,6 +1012,8 @@ namespace Proyecto_Arqui
             }
 
 
+            Console.ReadKey();
+            p.infoFinSimulacion();
             Console.ReadKey();
         }
 
