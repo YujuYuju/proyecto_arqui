@@ -127,7 +127,7 @@ namespace Proyecto_Arqui
         }
         public void leer_muchos_hilillos()//permite cargar todos los hilillos desde el txt a memoria
         {
-            mat_contextos = new long[cant_hilillos, 35];
+            mat_contextos = new long[cant_hilillos, 36];
             for (int i = 0; i < cant_hilillos; i++)
             {
                 leer_hilillo_txt(i);
@@ -182,7 +182,6 @@ namespace Proyecto_Arqui
                 }
             }
         }
-
         static void leerInstruccion()
         {
             //Buscar en cache, instruccion
@@ -240,8 +239,6 @@ namespace Proyecto_Arqui
                 }
             }
         }
-
-
         static void ejecutarInstruccion()
         {
             int bloque = dir_a_bloque(PC - 384);
@@ -258,8 +255,6 @@ namespace Proyecto_Arqui
             quantum++;
             //Console.WriteLine("Quatum del nucleo: " + quantum);            
         }
-
-
         private static void procesoDelNucelo()
         {
             //INICIALIZACION
@@ -300,8 +295,6 @@ namespace Proyecto_Arqui
 
             barreraCicloReloj.RemoveParticipant();
         }
-
-
         private static void finHilillo()
         {
             Console.WriteLine("Hilillo " + (hilillo_actual - 1) + " paró");
@@ -340,8 +333,6 @@ namespace Proyecto_Arqui
             }
 
         }
-
-
         public void infoFinSimulacion()
         {
             Console.WriteLine("\n**Fin de la Simulacion**\n\nLe memoria compartida quedo asi:\n");
@@ -349,7 +340,7 @@ namespace Proyecto_Arqui
             Console.WriteLine("\nPara cada hilillo que corrio:");
             for (int i = 0; i < mat_contextos.GetLength(0); i++)
             {
-                Console.Write("\n Registros: ");
+                Console.Write("\n*Hilillo: "+i + "*\nRegistros: ");
                 for (int j = 0; j < 32; j++)
                 {
                     Console.Write(" R["+j+"]= " + mat_contextos[i, j]);
@@ -370,10 +361,10 @@ namespace Proyecto_Arqui
 
 
 
-                Console.WriteLine("\nEste hilillo tardo " + mat_contextos[i, 34] + " ciclos en ejecutarse");
+                Console.WriteLine("\nEste hilillo tardo " + mat_contextos[i, 35] + " ciclos en ejecutarse");
                 Console.WriteLine("\n****Fin de Hilillo****\n");
             }
-            Console.WriteLine("\n**Fin de Hilillo**\n");
+            Console.WriteLine("\n**Fin de los resultados**\n");
 
         }
 
@@ -506,8 +497,6 @@ namespace Proyecto_Arqui
         }
 
 
-
-
         /*LOAD-----------------------------------------------------------------------------------------------------------------*/
         private static void lw_instruccion(int[] instru)
         {
@@ -555,8 +544,6 @@ namespace Proyecto_Arqui
                     break;
             }
         }
-
-
         private static void lw_nucleo(int direccionDelDato, int X, ref int[,] cache, bool esLoadLink, ref int RL_propio)
         {
             int bloqueDelDato = direccionDelDato / 16;
@@ -709,8 +696,6 @@ namespace Proyecto_Arqui
                 //LOCKs
                 logica_sw(false, direccionDondeSeGuarda, X, ref cache, ref primeraNoLocal, ref segundaNoLocal, esStoreConditional, ref RL_propia, ref RL_ajena1, ref RL_ajena2);
         }
-
-
         private static void logica_sw(bool fue_fallo, int direccionDondeSeGuarda, int X, ref int[,] cache, ref int[,] primeraNoLocal, ref int[,] segundaNoLocal, bool esStoreConditional, ref int RL_propia, ref int RL_ajena1, ref int RL_ajena2)
         {
             bool primeraCacheAgarrada = false;
@@ -854,8 +839,6 @@ namespace Proyecto_Arqui
             }
         }
 
-
-
         /*--------------------------------------------------------------------*/
         private static void revisarSiCambioContexto()
         {
@@ -964,9 +947,6 @@ namespace Proyecto_Arqui
                 }
             }
         }
-
-
-
 
         /*-------------------------------------------------------------------*/
         /*MAIN---------------------------------------------------------------*/
