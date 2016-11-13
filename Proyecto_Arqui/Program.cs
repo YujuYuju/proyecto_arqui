@@ -647,14 +647,14 @@ namespace Proyecto_Arqui
             int bloque = direccionDelDato / 16 * 4;
             for (int ins = 0; ins < 4; ins++)
             {
-                cache[ins, bloque_a_cache(direccionDelDato / 16)] = mem_principal_datos[((direccionDelDato) / 4) + ins];
+                cache[ins, bloque_a_cache(direccionDelDato / 16)] = mem_principal_datos[bloque + ins];
             }
 
             cache[4, bloque_a_cache(direccionDelDato / 16)] = direccionDelDato / 16;
             cache[5, bloque_a_cache(direccionDelDato / 16)] = 0;
 
             //Imprimir caché de datos
-            PrintMatriz(cache);
+            //PrintMatriz(cache);
 
             int contenidoDeMem = cache[palabraDelDato, bloque_a_cache(direccionDelDato / 16)];
             registros[X] = contenidoDeMem;
@@ -697,12 +697,12 @@ namespace Proyecto_Arqui
         private static void sw_nucleo(int direccionDondeSeGuarda, int X, ref int[,] cache, ref int[,] primeraNoLocal, ref int[,] segundaNoLocal, ref int RL_propia, ref int RL_ajena1, ref int RL_ajena2, bool esStoreConditional)
         {
             int bloqueDelDato = dir_a_bloque(direccionDondeSeGuarda);
-            bool fueFallo = false;
-            int j = 28;
+            bool fueFallo = true;
+            int j = 7;
             if (cache[4, bloque_a_cache(bloqueDelDato)] == bloqueDelDato && cache[5, bloque_a_cache(bloqueDelDato)] != 1)
             {
-                j = 7;
-                fueFallo = true;
+                j = 28;
+                fueFallo = false;
             }
             for (int i = 0; i < j; i++)
             {
@@ -830,13 +830,10 @@ namespace Proyecto_Arqui
                                 finally
                                 {
                                     Monitor.Exit(mem_principal_datos);
-                                    if (RL_propia == direccionDondeSeGuarda)
+                                    if (!fue_fallo && !esStoreConditional)
                                     {
-                                        if (!fue_fallo)
-                                        {
-                                            cache[dir_a_palabra(direccionDondeSeGuarda), bloque_a_cache(direccionDondeSeGuarda / 16)] = registros[X];
-                                            cache[5, bloque_a_cache(dir_a_bloque(direccionDondeSeGuarda))] = 0;//invalido
-                                        }
+                                        cache[dir_a_palabra(direccionDondeSeGuarda), bloque_a_cache(direccionDondeSeGuarda / 16)] = registros[X];
+                                        cache[5, bloque_a_cache(dir_a_bloque(direccionDondeSeGuarda))] = 0;//invalido
                                     }
                                 }
                             }
