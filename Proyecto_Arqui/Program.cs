@@ -21,6 +21,7 @@ namespace Proyecto_Arqui
         static int RL_3;
         static bool lento;
         static Stopwatch[] initial_clock;
+        static int[] clock;
 
         //VARIABLE LOCALES-locales a cada thread
 
@@ -131,7 +132,7 @@ namespace Proyecto_Arqui
         }
         public void leer_muchos_hilillos()//permite cargar todos los hilillos desde el txt a memoria
         {
-            mat_contextos = new long[cant_hilillos, 36];
+            mat_contextos = new long[cant_hilillos, 37];
             for (int i = 0; i < cant_hilillos; i++)
             {
                 leer_hilillo_txt(i);
@@ -199,6 +200,7 @@ namespace Proyecto_Arqui
                 for (int i = 0; i < 28; i++)
                 {
                     barreraCicloReloj.SignalAndWait();
+                    clock[hilillo_actual - 1]++;
                 }
 
                 //LOCK de la memoria de instrucciones, principal
@@ -238,6 +240,7 @@ namespace Proyecto_Arqui
                     else
                     {
                         barreraCicloReloj.SignalAndWait(); //tratando de hacer el LOCK, se cuentan ciclos de reloj
+                        clock[hilillo_actual - 1]++;
                     }
 
                 }
@@ -306,10 +309,24 @@ namespace Proyecto_Arqui
             Console.WriteLine("Hilillo " + (hilillo_actual - 1) + " paró");
             initial_clock[hilillo_actual - 1].Stop();
             int total = (int)initial_clock[hilillo_actual - 1].ElapsedMilliseconds;
-            mat_contextos[hilillo_actual - 1, 35] = total;
+            mat_contextos[hilillo_actual - 1, 35] = clock[hilillo_actual - 1];
+            mat_contextos[hilillo_actual - 1, 36] = getRL();
             for (int i = 0; i < 32; i++)
             {
                 Console.WriteLine("Registro[" + i + "]=" + registros[i]);
+            }
+        }
+
+        private static long getRL()
+        {
+            switch (System.Threading.Thread.CurrentThread.Name)
+            {
+                case "Nucleo1":
+                    return RL_1;
+                case "Nucleo2":
+                    return RL_2;
+                default:
+                    return RL_3;
             }
         }
 
@@ -353,24 +370,14 @@ namespace Proyecto_Arqui
                 for (int j = 0; j < 32; j++)
                 {
                     Console.Write(" R[" + j + "]= " + mat_contextos[i, j]);
+
                 }
                 string hiloActual = System.Threading.Thread.CurrentThread.Name;
-                switch (hiloActual)
-                {
-                    case "Nucleo1":
-                        Console.Write("\nEl RL es: " + RL_1);
-                        break;
-                    case "Nucleo2":
-                        Console.Write("\nEl RL es: " + RL_2);
-                        break;
-                    case "Nucleo3":
-                        Console.Write("\nEl RL es: " + RL_3);
-                        break;
-                }
+                Console.WriteLine("\nEl RL es: " + mat_contextos[i, 36]);
 
 
 
-                Console.WriteLine("\nEste hilillo tardo " + mat_contextos[i, 35] + " milisegundos en ejecutarse");
+                Console.WriteLine("\nEste hilillo tardo " + mat_contextos[i, 35] + " ciclos de reloj en ejecutarse");
                 Console.WriteLine("\n****Fin de Hilillo****\n");
             }
             Console.WriteLine("\n**Fin de los resultados**\n");
@@ -430,6 +437,7 @@ namespace Proyecto_Arqui
 
             registros[instru[2]] = param_1 + param_3;
             barreraCicloReloj.SignalAndWait();
+            clock[hilillo_actual - 1]++;
         }
         private static void dadd_instruccion(int[] instru)
         {
@@ -438,6 +446,7 @@ namespace Proyecto_Arqui
 
             registros[instru[3]] = param_1 + param_2;
             barreraCicloReloj.SignalAndWait();
+            clock[hilillo_actual - 1]++;
         }
         private static void dsub_instruccion(int[] instru)
         {
@@ -446,6 +455,7 @@ namespace Proyecto_Arqui
 
             registros[instru[3]] = param_1 - param_2;
             barreraCicloReloj.SignalAndWait();
+            clock[hilillo_actual - 1]++;
         }
         private static void dmul_instruccion(int[] instru)
         {
@@ -454,6 +464,7 @@ namespace Proyecto_Arqui
 
             registros[instru[3]] = param_1 * param_2;
             barreraCicloReloj.SignalAndWait();
+            clock[hilillo_actual - 1]++;
         }
         private static void ddiv_instruccion(int[] instru)
         {
@@ -462,6 +473,7 @@ namespace Proyecto_Arqui
 
             registros[instru[3]] = param_1 / param_2;
             barreraCicloReloj.SignalAndWait();
+            clock[hilillo_actual - 1]++;
         }
         private static void beqz_instruccion(int[] instru)
         {
@@ -474,6 +486,7 @@ namespace Proyecto_Arqui
                 PC += param_3 * 4;
             }
             barreraCicloReloj.SignalAndWait();
+            clock[hilillo_actual - 1]++;
         }
         private static void bnez_instruccion(int[] instru)
         {
@@ -486,22 +499,26 @@ namespace Proyecto_Arqui
                 PC += param_3 * 4;
             }
             barreraCicloReloj.SignalAndWait();
+            clock[hilillo_actual - 1]++;
         }
         private static void jal_instruccion(int[] instru)
         {
             registros[31] = PC;
             PC += instru[3];
             barreraCicloReloj.SignalAndWait();
+            clock[hilillo_actual - 1]++;
         }
         private static void jr_instruccion(int[] instru)
         {
             PC = registros[instru[1]];
             barreraCicloReloj.SignalAndWait();
+            clock[hilillo_actual - 1]++;
         }
         private static void fin_instruccion(int[] instru)
         {
             mat_contextos[hilillo_actual - 1, 33] = 1;
             barreraCicloReloj.SignalAndWait();
+            clock[hilillo_actual - 1]++;
             quantum++;
         }
 
@@ -595,6 +612,7 @@ namespace Proyecto_Arqui
                             for (int i = 0; i < 28; i++)//FALLO----------------------------
                             {
                                 barreraCicloReloj.SignalAndWait();
+                                clock[hilillo_actual - 1]++;
                             }
 
                             //Memoria de Datos---------------------------------------------------
@@ -619,6 +637,7 @@ namespace Proyecto_Arqui
                             {
                                 accesoTodas = false;
                                 barreraCicloReloj.SignalAndWait(); //tratando de hacer el LOCK, se cuentan ciclos de reloj
+                                clock[hilillo_actual - 1]++;
                             }//----------------------------------------------------------------
                         }
                     }//-----------------------------------------------------------------------
@@ -627,6 +646,7 @@ namespace Proyecto_Arqui
                 else
                 {
                     barreraCicloReloj.SignalAndWait();
+                    clock[hilillo_actual - 1]++;
                 }
 
             }
@@ -697,6 +717,7 @@ namespace Proyecto_Arqui
             for (int i = 0; i < j; i++)
             {
                 barreraCicloReloj.SignalAndWait();
+                clock[hilillo_actual - 1]++;
             }
             if (fueFallo)
                 //LOCKs
@@ -839,11 +860,16 @@ namespace Proyecto_Arqui
                     }
                     else
                     {
-                        if (!algunoNOseObtuvo)//tratando de hacer el LOCK
+                        if (!algunoNOseObtuvo) //tratando de hacer el LOCK
+                        {
                             barreraCicloReloj.SignalAndWait();
+                            clock[hilillo_actual - 1]++;
+
+                        }
                     }
                     //cacheLocal--------------------------------------------------------------------------------------------------------
                     barreraCicloReloj.SignalAndWait(); //ciclo de reloj de la lectura
+                    clock[hilillo_actual - 1]++;
                 }
             }
         }
@@ -975,8 +1001,12 @@ namespace Proyecto_Arqui
                     //Console.WriteLine("Ciclos de reloj hasta ahora: {0}", ciclos_reloj);
                 });
             initial_clock = new Stopwatch[cant_hilillos];
+            clock = new int[cant_hilillos];
             for (int i = 0; i < cant_hilillos; i++)
+            {
                 initial_clock[i] = new Stopwatch();
+                clock[i] = 0;
+            }
             //crear nucleos
             var nucleo1 = new Thread(new ThreadStart(procesoDelNucelo));
             nucleo1.Name = String.Format("Nucleo{0}", 1);
