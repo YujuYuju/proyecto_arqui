@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 
 namespace Proyecto_Arqui
@@ -19,8 +20,10 @@ namespace Proyecto_Arqui
         static int RL_2;
         static int RL_3;
         static bool lento;
+        static Stopwatch[] initial_clock;
 
         //VARIABLE LOCALES-locales a cada thread
+
         [ThreadStatic]
         static int quantum;          //cantidad de instrucciones ejecutadas
         [ThreadStatic]
@@ -65,6 +68,7 @@ namespace Proyecto_Arqui
             }
             mem_principal_instruc = new int[640];
             inicializarMemorias(ref mem_principal_instruc);
+
 
             cache_datos_1 = new int[6, 4];
             cache_datos_2 = new int[6, 4];
@@ -165,7 +169,7 @@ namespace Proyecto_Arqui
                             {
                                 if (!hilillos_tomados.Contains(i + 1))
                                 {
-                                    mat_contextos[i, 35] -= Int32.Parse(DateTime.Now.ToString("ddHHmmfff"));
+                                    initial_clock[i].Start();
                                     hilillos_tomados.Add(i + 1);  //poner numero de hilillo, correspondiente con el PC
                                     hilillo_actual = i + 1;
                                     PC = (int)mat_contextos[i, 32];
@@ -298,9 +302,11 @@ namespace Proyecto_Arqui
         }
         private static void finHilillo()
         {
-            
+
             Console.WriteLine("Hilillo " + (hilillo_actual - 1) + " paró");
-            mat_contextos[hilillo_actual - 1, 35] += Int32.Parse(DateTime.Now.ToString("ddHHmmfff"));
+            initial_clock[hilillo_actual - 1].Stop();
+            int total = (int)initial_clock[hilillo_actual - 1].ElapsedMilliseconds;
+            mat_contextos[hilillo_actual - 1, 35] = total;
             for (int i = 0; i < 32; i++)
             {
                 Console.WriteLine("Registro[" + i + "]=" + registros[i]);
@@ -364,7 +370,7 @@ namespace Proyecto_Arqui
 
 
 
-                Console.WriteLine("\nEste hilillo tardo " + mat_contextos[i, 35] + " ciclos en ejecutarse");
+                Console.WriteLine("\nEste hilillo tardo " + mat_contextos[i, 35] + " milisegundos en ejecutarse");
                 Console.WriteLine("\n****Fin de Hilillo****\n");
             }
             Console.WriteLine("\n**Fin de los resultados**\n");
@@ -930,7 +936,7 @@ namespace Proyecto_Arqui
                             hilillos_tomados.Remove(hilillo_actual);
                             hilillos_tomados.Add(indiceATomar + 1);  //poner numero de hilillo, correspondiente con el PC
                             hilillo_actual = indiceATomar + 1;
-                            mat_contextos[hilillo_actual - 1, 35] -= Int32.Parse(DateTime.Now.ToString("ddHHmmfff"));
+                            initial_clock[hilillo_actual - 1].Start();
 
                             PC = (int)mat_contextos[indiceATomar, 32];
                             Console.WriteLine(System.Threading.Thread.CurrentThread.Name + " tomo el hilillo " + (indiceATomar));
@@ -968,6 +974,9 @@ namespace Proyecto_Arqui
                     ciclos_reloj++;
                     //Console.WriteLine("Ciclos de reloj hasta ahora: {0}", ciclos_reloj);
                 });
+            initial_clock = new Stopwatch[cant_hilillos];
+            for (int i = 0; i < cant_hilillos; i++)
+                initial_clock[i] = new Stopwatch();
             //crear nucleos
             var nucleo1 = new Thread(new ThreadStart(procesoDelNucelo));
             nucleo1.Name = String.Format("Nucleo{0}", 1);
